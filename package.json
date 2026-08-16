@@ -40,7 +40,5 @@
     "tsx": "^4.23.12",
     "typescript": "^5"
   },
-  "overrides": {
-    "jose": "5.9.6"
-  }
+  "//jose": "Do not re-add an `overrides` pin for jose. @auth/core needs ^6.0.6; an exact pin on an older major left npm installing no copy at all, which crashed /api/auth/[...nextauth] at module load and made every session request return an empty body."
 }
