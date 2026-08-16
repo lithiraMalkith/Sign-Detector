@@ -1,0 +1,2334 @@
+[[PAGE 1]]
+1 
+ 
+Transformer-Based AI System for Real-Time Two-Way 
+Deaf–Hearing Communication 
+R26-SE-019 
+ 
+ 
+Project Proposal Report  
+Malkith G W L – IT22630834 
+ 
+ 
+ 
+B.Sc. (Hons) Degree in Information Technology Specialized in  
+Software Engineering 
+ 
+ 
+ 
+Department of Software Engineering 
+ 
+Sri Lanka Institute of Information Technology Sri Lanka 
+ 
+ 
+ 
+ 
+                                                        March 2026 
+ 
+                                
+[[PAGE 2]]
+2 
+ 
+DECLARATION  
+ 
+I declare that this is my own work, and this proposal does not knowingly incorporate any 
+material previously submitted for a degree or diploma at any other university or higher 
+education institution, nor does it contain any material that has been previousl y published or 
+written by another person apart from where proper acknowledgment is given in the text. 
+ 
+Name  
+ 
+Student ID  Signature  
+ 
+Malkith G W L 
+ 
+ 
+IT22630834 
+ 
+ 
+  
+The above candidate is conducting research for their undergraduate Dissertation under my 
+supervision. 
+ 
+Name   Date Signature 
+ 
+Hansi De Silva 
+ 
+ 
+Supervisor 
+ 
+12/03/2026 
+ 
+ 
+ 
+Ishara Weerathunga 
+ 
+Co-Supervisor 
+ 
+12/03/2026  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+[[PAGE 3]]
+3 
+ 
+ 
+ABSTRACT  
+ 
+Communication barriers between Deaf sign language users and hearing individuals remain a 
+persistent global accessibility challenge with profound social, educational, and economic 
+consequences. In Sri Lanka, over 35,000 individuals are profoundly Deaf [2], yet the absence 
+of any real-time automated translation between Sinhala spoken language and Sinhala Sign 
+Language (SSL) forces Deaf Sri Lankans to rely on scarce human interpreters or remain 
+excluded from spontaneous verbal interaction entirely. 
+ 
+Existing systems such as Google Live Transcribe, Ava, and academic sign language 
+production models either target text-only output, operate exclusively in English with 
+American Sign Language (ASL), or produce only static pre-rendered animations with no 
+prosodic or emotional conditioning. None address the linguistic specifics of Sinhala — an 
+agglutinative language with complex morphological inflection — nor the absence of any 
+public Sinhala-to-SSL parallel corpus. 
+ 
+This proposal presents the Speech-to-Sign Linguistic and Prosodic Processing Component of 
+Research Project R26-SE-019, which delivers real-time Sinhala spoken audio to SSL 
+translation. The proposed system introduces a novel Unified Emotion-Conditioned Sign 
+Synthesis Transformer — a single mT5-based encoder-decoder with dual output heads that 
+jointly generates SSL gloss token sequences and 3D bone rotation parameters at 30fps from 
+Sinhala text input. This replaces the fragmented two-model approach of the closest prior 
+work (Gamage et al., ICAC 2023) with a unified architecture capable of real-time, 
+emotionally modulated, anatomically correct SSL signing. 
+ 
+A critical and architecturally unique stage is Sinhala morphological normalization using 
+sinling, which converts agglutinative Sinhala word forms to SSL-compatible base forms 
+before gloss mapping. Emotion classification is performed using XLM-RoBERTa, confirmed 
+by Dhananjaya et al. (LREC 2022) as the best model for Sinhala NLP tasks, while prosodic 
+features are extracted via librosa. An original Sinhala-to-SSL parallel corpus of 500+ 
+sentence pairs will be co-constructed with Deaf signers at the School for the Deaf, Ratmalana 
+— the first such corpus to exist. 
+ 
+The system streams bone animation data via FastAPI WebSocket to an Expo Android 
+application rendering a live 3D signing avatar using Three.js and native OpenGL ES via 
+expo-gl. Expected outcomes include Sinhala ASR WER below 10%, emotion classification 
+accuracy above 85%, BLEU-4 above 0.40, bone regression MSE below 0.05 radians, end-to-
+[[PAGE 4]]
+4 
+ 
+end latency below 500ms, and Deaf user sign comprehension above 80%. The system 
+directly advances SDG 10 (Reduced Inequalities) by enabling genuine real-time inclusion for 
+the Sri Lankan Deaf community in healthcare, education, and public service. 
+Keywords: Sinhala Sign Language, SSL, Whisper ASR, XLM-RoBERTa, mT5, sinling, 
+Morphological Normalization, Bone Animation, Emotion-Conditioned Synthesis, Real-Time 
+Translation, Deaf Accessibility, Sri Lanka 
+ 
+  
+[[PAGE 5]]
+5 
+ 
+ACKNOWLEDGEMENT 
+ 
+I would like to express my sincere gratitude to my supervisor, Ms. Hansi De Silva, and co-
+supervisor, Ms. Ishara Weerathunga, for their invaluable guidance, continuous support, and 
+constructive feedback throughout the development of this research proposal. Their expertise 
+in artificial intelligence, software engineering, and natural language processing has been 
+instrumental in shaping the direction, scope, and technical depth of this work. 
+I am deeply grateful to the School for the Deaf, Ratmalana, for their willingness to 
+collaborate on this project and provide authentic Sinhala Sign Language domain knowledge. 
+Their participation in corpus construction, expert validation of SSL glosses, and commitment 
+to supporting user evaluation will be essential for grounding the system in real-world Deaf 
+community needs and ensuring cultural and linguistic sensitivity throughout the research. 
+I also thank my fellow research team members — Chamara R M L K, Gimhan T P K, and 
+Ranathunga R A K N — for their collaborative spirit, shared commitment to inclusive 
+communication technology, and ongoing integration work across system components. Finally, 
+I wish to acknowledge the Sri Lanka Institute of Information Technology (SLIIT) for 
+providing the academic environment, computing resources, and research infrastructure that 
+make this project possible. 
+ 
+  
+[[PAGE 6]]
+6 
+ 
+ 
+Table of Contents 
+ 
+DECLARATION ................................ ................................ ..............................  2 
+ABSTRACT ................................ ................................ ................................ ..... 3 
+ACKNOWLEDGEMENT ................................ ................................ ................. 5 
+LIST OF TABLES ................................ ................................ ............................  9 
+LIST OF ABBREVIATIONS ................................ ................................ ........... 10 
+LIST OF APPENDICES ................................ ................................ .................. 11 
+1. INTRODUCTION ................................ ................................ ................... 12 
+1.1 Background and Context ......................................................................................... 12 
+1.1.1 The Global and Local Scale of the Problem ................................ .................. 12 
+1.1.2 The Technology Gap ................................ ................................ ................. 13 
+1.1.3 Proposed Solution Overview ................................ ................................ ...... 13 
+1.2 Literature Review................................................................................................... 14 
+1.2.1 Commercial Assistive Systems — Analysis and Limitations ............................  14 
+1.2.2 Academic Research Systems — Analysis and Limitations ...............................  15 
+1.2.3 Sri Lankan and Regional Contributions ................................ ........................ 17 
+1.2.4 Existing Solution Limitations — Synthesis ................................ ................... 18 
+1.3 Research Gap ............................................................................................................... 19 
+1.3.1 Identified Gaps ................................ ................................ .........................  19 
+1.3.2 Novelty and Justification................................ ................................ ............ 19 
+1.3.3 SDG Alignment and Societal Impact ................................ ............................  20 
+2. OBJECTIVE ................................ ................................ ...........................  21 
+2.1 Main Objective ............................................................................................................. 21 
+2.2 Specific Objectives ....................................................................................................... 21 
+3. METHODOLOGY ................................ ................................ .................. 22 
+3.1 Research Approach ....................................................................................................... 22 
+3.2 Pipeline Architecture ..................................................................................................... 22 
+3.3 Stage 1 — Sinhala ASR (Whisper) ................................................................................. 24 
+3.4 Stage 2b — Sinhala Morphological Normalization (Novel Stage) ....................................... 24 
+3.4.1 The Agglutinative Problem ................................ ................................ ......... 24 
+[[PAGE 7]]
+7 
+ 
+3.5 Stage 3 — Emotion Classification (XLM-RoBERTa)........................................................ 25 
+3.6 Stage 4 — Unified Emotion-Conditioned Sign Synthesis Transformer ................................ 26 
+3.7 Original Corpus Construction — Sinhala-SSL Parallel Dataset .......................................... 28 
+3.8 Stages 5–6 — FastAPI WebSocket and Expo Android Avatar ............................................ 29 
+3.8.1 FastAPI WebSocket Endpoint ................................ ................................ ..... 29 
+3.8.2 Expo Android Application ................................ ................................ .......... 29 
+3.9 Technology Stack ......................................................................................................... 30 
+3.10 Evaluation Strategy ..................................................................................................... 31 
+4. HIGH-LEVEL SYSTEM ARCHITECTURE ................................ ............. 33 
+4.1 Component Overview ................................................................................................... 33 
+4.2 System Architecture and Data Flow ................................................................................ 33 
+4.3 Novel vs. Prior Architecture ........................................................................................... 34 
+4.4 Scalability and Security ................................................................................................. 35 
+5. USER REQUIREMENTS ................................ ................................ ................... 36 
+5.1 Stakeholder Identification .............................................................................................. 36 
+5.2 Functional Requirements ............................................................................................... 36 
+5.3 Non-Functional Requirements ........................................................................................ 38 
+6. COMMERCIALIZATION PLAN ................................ .............................  39 
+6.1 Target Market and Customer Persona .............................................................................. 39 
+6.1.1 Institutional Market (Primary) ................................ ................................ .... 39 
+6.1.2 Consumer Market (Secondary) ................................ ................................ ... 39 
+6.1.3 NGO and Government Grant Market ................................ ...........................  39 
+6.2 Value Proposition ......................................................................................................... 40 
+6.3 Revenue Model ............................................................................................................ 40 
+6.4 Competitive Advantage and Intellectual Property ............................................................. 40 
+6.5 Cost Estimation and Pricing Strategy .............................................................................. 41 
+7. BUDGET AND JUSTIFICATION ................................ .............................  42 
+8. WORK BREAKDOWN STRUCTURE (WBS) ................................ ........... 44 
+9. GANTT CHART ................................ ................................ ...................... 46 
+10. REFERENCES ................................ ................................ .................... 48 
+11. APPENDICES ................................ ................................ ...................... 50 
+Appendix A: Risk Analysis ................................................................................................. 50 
+Appendix B: Ethical Considerations Checklist ....................................................................... 51 
+Appendix C: Sinhala Sign Language — Linguistic Background............................................... 52 
+[[PAGE 8]]
+8 
+ 
+C.1 SSL Grammar Overview ................................ ................................ .............. 52 
+C.2 Justification for Bone-Level Animation ................................ ..........................  52 
+ 
+  
+[[PAGE 9]]
+9 
+ 
+LIST OF TABLES 
+ 
+Table 1: Comparative Analysis of Existing Commercial Systems   
+Table 2: Comparative Analysis of Academic Research Systems   
+Table 3: Summary of Research Gaps Identified   
+Table 4: 6-Stage Pipeline Architecture Summary   
+Table 5: Unified mT5 Transformer Specification   
+Table 6: Original Sinhala-SSL Corpus Construction Plan   
+Table 7: Complete Technology Stack with Sinhala Support   
+Table 8: Evaluation Metrics and Targets   
+Table 9: Novel vs. Prior Architecture — Feature Comparison   
+Table 10: Functional Requirements   
+Table 11: Non-Functional Requirements   
+Table 12: Project Budget Breakdown   
+Table 13: Work Breakdown Structure   
+Table 14: Risk Analysis   
+ 
+ 
+ 
+LIST OF FIGURES 
+ 
+Figure 1: Sinhala Audio → SSL Translation — 6-Stage Pipeline Architecture  
+Figure 2: Unified Emotion-Conditioned Sign Synthesis Transformer Architecture   
+Figure 3: R26-SE-019 — High-Level System Architecture & Component Interactions   
+Figure 4: Prior Work vs. Novel Architecture — Comparative Diagram   
+ 
+ 
+  
+[[PAGE 10]]
+10 
+ 
+LIST OF ABBREVIATIONS 
+ 
+Abbreviation Full Form 
+ASR Automatic Speech Recognition 
+SSL Sinhala Sign Language (ශ්‍රී ලංකා සංඥා භාෂාව) 
+NLP Natural Language Processing 
+NMM Non-Manual Marker (facial/body grammatical signals in sign language) 
+XLM-R Cross-Lingual RoBERTa (XLM-RoBERTa) 
+mT5 Multilingual Text-to-Text Transfer Transformer 
+WER Word Error Rate 
+BLEU Bilingual Evaluation Understudy (translation quality metric) 
+MSE Mean Squared Error 
+DSR Design Science Research 
+SDG Sustainable Development Goal 
+SLIIT Sri Lanka Institute of Information Technology 
+UNCRPD UN Convention on the Rights of Persons with Disabilities 
+API Application Programming Interface 
+VRM Virtual Reality Model (3D avatar format) 
+ASL American Sign Language 
+POS Part-of-Speech tagging 
+F0 Fundamental frequency (pitch) 
+MFCC Mel-Frequency Cepstral Coefficient 
+GPU Graphics Processing Unit 
+LKR Sri Lankan Rupee 
+  
+[[PAGE 11]]
+11 
+ 
+LIST OF APPENDICES 
+  
+[[PAGE 12]]
+12 
+ 
+1. INTRODUCTION 
+1.1 Background and Context 
+1.1.1 The Global and Local Scale of the Problem 
+Communication is a fundamental human right enshrined in the Universal Declaration of 
+Human Rights and reaffirmed in the United Nations Convention on the Rights of Persons 
+with Disabilities (UNCRPD, 2006) [5]. Yet an estimated 70 million Deaf individuals 
+worldwide [1] rely on sign language as their primary means of expression in a world 
+overwhelmingly oriented towards spoken and written language. The resulting communication 
+chasm manifests across every dimension of daily life — education, healthcare, employment, 
+legal services, and social participation — with consequences that are simultaneously 
+measurable and unjust. 
+In Sri Lanka, the scale of this exclusion is acute. Government health surveys estimate that 
+over 35,000 individuals are profoundly Deaf [2], with a substantially larger group 
+experiencing significant hearing loss. Despite this, fewer than 3% of public service providers 
+— including hospitals, banks, courts, and government offices — employ staff with any 
+Sinhala Sign Language (SSL) proficiency [2]. A Deaf Sri Lankan seeking medical attention, 
+pursuing legal recourse, or accessing government services faces systematic exclusion from 
+the communication infrastructure of their own society. 
+The economic consequences compound the social harm. The International Labor 
+Organization (ILO) reports that persons with disabilities, including Deaf individuals, earn on 
+average 25–30% less than hearing counterparts in comparable roles, with significantly lower 
+workforce participation rates [4]. In Sri Lanka, the cost of engaging a professional SSL 
+interpreter — where one is even available — ranges from LKR 200,000 to LKR 400,000 
+annually per Deaf employee, placing the burden of inclusion almost entirely on either the 
+employer or the individual. These structural barriers directly violate the spirit and letter of 
+UNCRPD Article 21, which mandates that state parties ensure full accessibility of 
+communication in all public domains. 
+Educational exclusion begins early. Deaf students in mainstream Sri Lankan schools 
+frequently lack access to real-time SSL interpretation during lessons, resulting in missed 
+instruction, reduced comprehension, and lower academic attainment. The Sri Lanka School 
+for the Deaf, Ratmalana — the primary institution serving Deaf children in the country — 
+serves fewer than 400 students, leaving the majority of Deaf children in Sri Lanka without 
+specialized linguistic support. The downstream effects on employment, civic participation, 
+and mental health are well documented [3]. 
+"The exclusion of Deaf communities from digital communication tools is not a minor accessibility 
+gap — it is a systemic denial of the right to participate in society." — World Federation of the 
+Deaf, 2023 [1] 
+[[PAGE 13]]
+13 
+ 
+1.1.2 The Technology Gap 
+Assistive technology for Deaf communities has advanced significantly in the speech-to-text 
+domain over the past decade. Automatic Speech Recognition (ASR) systems such as Google 
+Live Transcribe, OpenAI Whisper, and Microsoft Azure Speech Services now achieve near-
+human accuracy on English speech in controlled conditions. However, the fundamental 
+modality mismatch between these tools and sign language communication remains entirely 
+unaddressed for Sinhala: these systems produce text, not sign language, and they are not 
+designed for the linguistic structures, prosodic cues, or visual-gestural grammar of SSL. 
+Sign language is not a manual encoding of spoken language. SSL has its own grammar, word 
+order (topic-comment structure rather than subject-verb-object), spatial referencing system, 
+and a rich non-manual component in which facial expressions, head movements, and body 
+posture carry grammatical meaning. A system that merely transcribes Sinhala speech to text 
+and displays it on screen provides some accessibility but fails to bridge communication to 
+Deaf individuals whose primary language is SSL and who may have limited written Sinhala 
+literacy. A genuine communication bridge requires translation to SSL — including its full 
+grammatical and prosodic expressiveness. 
+No such system currently exists for Sinhala. The research community has produced sign 
+language production systems for English-to-ASL translation, but these are fundamentally 
+inapplicable to the Sri Lankan context: they use English NLP pipelines, English-ASL parallel 
+corpora such as PHOENIX-14T, and English-specific language models that produce only 
+[UNK] tokens for Sinhala Unicode script. Sinhala presents additional unique challenges as an 
+agglutinative language — a single verb root may appear in over 40 inflected surface forms 
+depending on tense, person, number, and case — yet no prior sign language production 
+system includes a Sinhala morphological preprocessing stage. 
+ 
+1.1.3 Proposed Solution Overview 
+This research project proposes a real-time end-to-end pipeline for Sinhala Audio to Sinhala 
+Sign Language (SSL) translation, delivered as an Android application for Deaf users. The 
+system architecture comprises six sequential processing stages: (1) Sinhala ASR via fine-
+tuned Whisper, (2a) prosody extraction via librosa, (2b) Sinhala morphological normalization 
+via sinling, (3) emotion classification via XLM-RoBERTa, (4) unified mT5 synthesis 
+transformer generating SSL glosses and 3D bone rotations, and (5–6) real-time avatar 
+rendering via FastAPI WebSocket and Expo Android app. 
+The central novel contribution is the Unified Emotion-Conditioned Sign Synthesis 
+Transformer: a single mT5-based model with dual output heads that jointly learn SSL gloss 
+generation and anatomically correct bone rotation regression from a shared Sinhala encoder, 
+conditioned on prosody and emotion vectors. This eliminates the need for a lookup table of 
+pre-recorded signing clips, enabling the system to generate novel SSL signing for any Sinhala 
+input in real time, with emotional expressiveness modulated by the speaker's detected tone. 
+[[PAGE 14]]
+14 
+ 
+The system will be validated by a Deaf user comprehension study at the School for the Deaf, 
+Ratmalana, and targets: Sinhala WER below 10%, emotion accuracy above 85%, SSL BLEU-
+4 above 0.40, bone MSE below 0.05 rad, and end-to-end latency below 500ms. The Android 
+APK will sustain 25fps avatar rendering on target hardware. 
+This project contributes to SDG 10 (Reduced Inequalities) and aligns with the SLIIT Centre 
+of Excellence for AI (CoEAI) research cluster on human-computer interaction and assistive 
+technology. 
+ 
+1.2 Literature Review 
+1.2.1 Commercial Assistive Systems — Analysis and Limitations 
+A range of commercial products address communication accessibility for Deaf individuals. 
+This section critically analyses the most significant systems, identifying their capabilities and 
+the specific limitations that motivate the current research. 
+ 
+Table 1: Comparative Analysis of Existing Commercial Assistive Systems 
+System Developer Technology Language Output 
+Modality 
+Key 
+Limitation 
+Google Live 
+Transcribe 
+Google Cloud ASR 
+(Transformer) 
+English + 70 
+languages 
+Text captions 
+only 
+No sign 
+language 
+output; text 
+only; not 
+optimised for 
+Sinhala 
+Ava Ava 
+Accessibility 
+Multi-speaker 
+ASR 
+English-
+primary 
+Text captions + 
+speaker ID 
+No SSL; multi-
+speaker text 
+only; no 
+emotional 
+content 
+Rogervoice Rogervoice 
+SAS 
+Telephony 
+ASR 
+French, 
+English 
+Text captions 
+for calls 
+Telephone 
+domain only; 
+no sign 
+language; no 
+Sinhala 
+Signily Signily Inc. Static ASL 
+emoji keyboard 
+ASL only Pre-rendered 
+ASL stickers 
+Manual only; 
+no automation; 
+ASL only; no 
+Sinhala 
+[[PAGE 15]]
+15 
+ 
+Microsoft 
+Azure Sign 
+Microsoft 
+(Research) 
+Pose 
+estimation + 
+ASL avatar 
+English-ASL 
+only 
+ASL avatar 
+(limited) 
+English-ASL 
+only; not real-
+time; no 
+Sinhala; no 
+emotion 
+HandTalk HandTalk Rule-based + 
+NMT 
+Portuguese, 
+English 
+Avatar (pre-
+animated) 
+No Sinhala; no 
+SSL; rule-based 
+glossing misses 
+grammar 
+nuance 
+ 
+Several consistent limitations emerge across all commercial systems. First, every system 
+produces text or pre-rendered American Sign Language output — none support SSL or 
+Sinhala in any form. Second, all systems are fundamentally unidirectional: they assist Deaf 
+individuals in understanding spoken language but do not generate sign language output that 
+allows hearing individuals to communicate through a Deaf-accessible visual modality. Third, 
+no system incorporates prosodic or emotional features from the source speech, despite the 
+established linguistic significance of non-manual markers (NMMs) in sign languages, where 
+facial expressions encode questions, negation, conditional clauses, and emotional intensity. 
+Fourth, all systems require internet connectivity and cloud processing, introducing latency 
+incompatible with natural conversational rhythm. 
+ 
+Critical limitation across all commercial systems: zero support for Sinhala audio input, zero 
+support for Sinhala Sign Language output, and zero prosodic or emotional conditioning of 
+signing output. 
+ 
+1.2.2 Academic Research Systems — Analysis and Limitations 
+ 
+Academic research has advanced sign language production significantly beyond commercial 
+offerings, particularly through the adoption of transformer architectures. This section reviews 
+the most relevant works, tracing the progression from rule-based to deep learning approaches 
+and identifying the gaps each leaves. 
+Ko et al. [10] proposed one of the earliest neural sign language production systems using 
+sequence-to-sequence transformer models for English-to-ASL gloss translation. Their work 
+demonstrated that transformer encoder-decoder architectures could learn the structural 
+mappings between English grammar and ASL grammar, including reordering of subject-verb-
+object to topic-comment structure. However, the system produced only gloss sequences — 
+symbolic representations of signs — rather than motion parameters, and required a separate 
+rendering system to produce avatar animation. The system was trained entirely on 
+[[PAGE 16]]
+16 
+ 
+PHOENIX-14T, an English-German sign language corpus, making it entirely inapplicable to 
+Sinhala or SSL. 
+Stoll et al. [11] extended sign language production by introducing prosody-awareness, 
+demonstrating that incorporating pitch, energy, and rhythm features from source audio 
+improved the naturalness and comprehensibility of generated sign sequences. This work 
+provided the theoretical and empirical foundation for including prosodic features in the 
+present pipeline. However, Stoll et al. operated on English speech only, used a generative 
+adversarial network (GAN) for animation rather than direct bone regression, and produced 
+only upper-body pose sequences rather than full anatomical bone rotations compatible with 
+3D avatar frameworks. 
+Saunders et al. [12] introduced the Progressive Transformer, specifically designed for sign 
+language production, which improved temporal consistency of generated signing sequences 
+by producing motion parameters progressively rather than in a single pass. Their model 
+achieved state-of-the-art BLEU-4 scores on PHOENIX-14T and demonstrated that 
+transformer architectures substantially outperform recurrent approaches for sign language 
+production. However, their system was again English-ASL only, produced 2D joint positions 
+rather than 3D Euler angles, and had no real-time inference capability — inference time per 
+sentence was approximately 2–4 seconds on GPU hardware. 
+Camgoz et al. [13] produced the first end-to-end neural sign language translation system, 
+combining a CNN feature extractor for signing videos with a transformer sequence-to-
+sequence model for gloss and translation generation. This established the benchmark 
+architecture for sign language translation but was designed for recognition (sign-to-text) 
+rather than production (text-to-sign), and operated on PHOENIX-14T exclusively. 
+For ASR, Radford et al.'s Whisper model [14] represents the current state of the art in 
+multilingual speech transcription. Trained on 680,000 hours of multilingual audio, Whisper 
+achieves robust performance across 99 languages including Sinhala (language code 'si'), with 
+strong noise resilience and speaker-independent accuracy. Critically, Whisper is the only 
+publicly available ASR model with confirmed Sinhala language support at a quality level 
+suitable for downstream NLP processing, making it the only viable choice for Stage 1 of the 
+proposed pipeline. 
+For Sinhala NLP, Dhananjaya et al. [19] provided the most directly relevant prior work 
+through their comprehensive evaluation of pre-trained language models on Sinhala 
+downstream tasks. They demonstrated conclusively that XLM-RoBERTa outperforms 
+multilingual BERT, Sinhala BERT, and all English-only models on Sinhala classification 
+tasks including sentiment and emotion detection. Critically, they showed that English-only 
+models such as RoBERTa-base produce only [UNK] tokens for Sinhala Unicode input, 
+making them entirely unsuitable for the present application. This work directly determines 
+the model selection for Stage 3 of the proposed pipeline. 
+Gamage et al. [20] produced the closest prior work to the present research — a Sinhala Sign 
+Language translation system using deep learning. Their ICAC 2023 paper presents a system 
+[[PAGE 17]]
+17 
+ 
+using two separate CNN models: a face emotion classifier operating on the speaker's video, 
+and a sign selection model mapping detected emotion and speech content to pre-recorded 
+SSL GIF animations. While Gamage et al. demonstrate the feasibility of automated SSL 
+production, their system exhibits five critical limitations that the present work directly 
+addresses: (1) it requires video of the speaker's face rather than processing audio-derived 
+emotion; (2) it produces only static pre-rendered GIF animations rather than real-time bone 
+animation; (3) the two separate CNNs cannot share learned representations between emotion 
+and sign generation; (4) there is no Sinhala ASR stage — text input is assumed; and (5) there 
+is no morphological preprocessing for Sinhala's agglutinative inflection. 
+ 
+Table 2: Comparative Analysis of Key Academic Research Systems 
+Paper Year Input 
+Language 
+Sign 
+Language 
+Output Type Key Limitation for This 
+Work 
+Ko et al. [10] 2019 English ASL Gloss 
+sequence 
+No motion params; 
+English-ASL only; no 
+Sinhala 
+Stoll et al. [11] 2018 English German SL Pose (2D) No 3D bones; English 
+only; no emotion 
+conditioning 
+Saunders et 
+al. [12] 
+2020 English ASL 2D joint 
+positions 
+No real-time; English-ASL 
+only; 2D not 3D 
+Camgoz et al. 
+[13] 
+2018 German German SL Recognition 
+only 
+Sign-to-text; not 
+production; no Sinhala 
+Dhananjaya 
+et al. [19] 
+2022 Sinhala N/A Classification NLP only — no sign 
+language; no ASR; no 
+avatar 
+Gamage et al. 
+[20] 
+2023 Sinhala 
+(text) 
+SSL Static GIF 
+animation 
+No ASR; no morphology; 
+no real-time bones; two 
+separate models 
+ 
+1.2.3 Sri Lankan and Regional Contributions 
+Within Sri Lanka, a small number of research efforts have addressed sign language 
+accessibility, though all remain confined to educational or static use cases. Wanasinghe et al. 
+[17] developed Hastha, an online learning platform for the hearing impaired that presents 
+SSL signs through instructional video content. While pedagogically valuable, Hastha is a one-
+directional learning tool with no automated translation capability. The Sinhala Sign Language 
+[[PAGE 18]]
+18 
+ 
+Learning System [18] similarly provides structured SSL education through a web interface 
+but does not process natural speech input or produce real-time signing output. 
+Both systems serve a genuine need for SSL education but confirm rather than address the 
+research gap: there is no system that can take spontaneous Sinhala speech as input and 
+produce real-time, expressive SSL animation output. The absence of even a Sinhala-SSL 
+parallel corpus further underscores the lack of foundational research infrastructure in this 
+domain, making corpus construction itself a primary research contribution of the present 
+project. 
+1.2.4 Existing Solution Limitations — Synthesis 
+Across the full spectrum of commercial and academic systems reviewed, six categories of 
+limitation consistently emerge that the proposed system directly addresses: 
+• Modality gap: All commercial systems output text, not sign language. Deaf users 
+whose primary language is SSL are not served by text captioning alone, particularly 
+those with limited written Sinhala literacy. 
+• Language specificity: All sign language production research uses English-ASL or 
+German-DGS pairs. No system exists for Sinhala-to-SSL, and English NLP models 
+are demonstrably non-functional on Sinhala Unicode input. 
+• Morphological blindness: Sinhala's agglutinative morphology means inflected forms 
+cannot be directly mapped to SSL glosses. No prior sign language system includes a 
+Sinhala morphological preprocessing stage. 
+• Prosody and emotion absence: Non-manual markers (NMMs) — facial expressions, 
+head movements, body posture — are grammatically essential in SSL. No existing 
+Sinhala sign language system incorporates prosodic or emotional features from source 
+speech. 
+• Static animation: The only prior Sinhala SSL system (Gamage et al., 2023) produces 
+static pre-rendered GIF animations from a fixed library, precluding real-time 
+generation of novel signing sequences for arbitrary input. 
+• Corpus vacuum: No public Sinhala-to-SSL parallel corpus exists, making supervised 
+training of any data-driven Sinhala SSL system impossible without first constructing 
+the corpus — a significant barrier that this project addresses directly. 
+ 
+ 
+ 
+ 
+ 
+ 
+[[PAGE 19]]
+19 
+ 
+1.3 Research Gap 
+1.3.1 Identified Gaps 
+Based on the systematic review of commercial systems, international academic research, and 
+local Sri Lankan contributions, four specific, evidence-based research gaps are identified: 
+Table 3: Summary of Research Gaps and Evidence Base 
+# Gap Evidence Impact if Unaddressed 
+G1 No real-time 
+Sinhala-to-SSL 
+pipeline exists 
+No published system takes 
+Sinhala audio and produces SSL 
+signing in any form (confirmed 
+by review of 20+ systems) 
+Deaf Sri Lankans have no automated 
+communication bridge for spontaneous 
+Sinhala speech 
+G2 Sinhala morphology 
+not addressed in any 
+sign language 
+system 
+Sinhala is agglutinative (40+ 
+inflected forms per root); all prior 
+SSL systems assume English 
+word-form input (Gamage et al., 
+2023 [20]) 
+Gloss mapping fails for >60% of Sinhala 
+surface forms without normalisation; 
+model vocabulary explodes 
+G3 Prosody and 
+emotion absent 
+from Sinhala SSL 
+output 
+No Sinhala system uses audio 
+prosody or speech emotion; 
+NMMs are grammatically 
+mandatory in SSL (Stoll et al., 
+2018 [11]) 
+Generated SSL is grammatically 
+incomplete; questions, negations, and 
+emotional content are missing 
+G4 No Sinhala-SSL 
+parallel corpus 
+exists 
+PHOENIX-14T and How2Sign 
+are English-German and English-
+ASL only; no Sinhala-SSL dataset 
+in any published work 
+Supervised learning of Sinhala-SSL 
+translation is impossible without first 
+constructing the corpus 
+ 
+1.3.2 Novelty and Justification 
+The proposed system addresses all four gaps simultaneously through a single integrated 
+architecture. The novelty is not incremental — it is architectural. Rather than adapting an 
+existing English sign language production system to Sinhala, this work designs from the 
+ground up for Sinhala's specific linguistic characteristics and the SSL community's specific 
+needs. 
+The central novel contribution — the Unified Emotion-Conditioned Sign Synthesis 
+Transformer — has no direct precedent in the literature. While multi-task transformers are 
+well-established in NLP, no prior work applies a multi-task transformer to jointly predict sign 
+language gloss sequences and anatomically parameterized 3D bone rotations from a minority 
+language input with emotion conditioning. The dual-head mT5 architecture enables the model 
+to learn cross-modal representations between Sinhala linguistic structure and SSL motion 
+[[PAGE 20]]
+20 
+ 
+parameters — something impossible with the lookup-table approach of Gamage et al. [20] or 
+the separate-model approach of all prior sign language production systems. 
+The sinling morphological normalization stage represents a contribution to the NLP 
+preprocessing pipeline for low-resource agglutinative languages in sign language contexts. 
+No prior work has addressed the specific challenge of mapping agglutinative Sinhala surface 
+forms to sign language glosses, and the approach developed here — stemming to base form, 
+extracting tense markers as SSL temporal adverb annotations, and converting case suffixes to 
+SSL spatial grammar markers — provides a principled linguistic framework applicable to 
+other agglutinative languages in future work. 
+The original Sinhala-SSL parallel corpus, constructed in collaboration with the School for the 
+Deaf, Ratmalana using MediaPipe and Kalidokit, will be the first such resource to exist 
+publicly. Its creation constitutes a research contribution independent of the translation system 
+itself, providing a foundation for future Sinhala SSL research by other researchers. 
+ 
+This research is the first to simultaneously address all four identified gaps in Sinhala-to-SSL 
+translation: real-time pipeline, morphological preprocessing, prosody/emotion conditioning, and 
+original corpus construction. The combination of these contributions constitutes a novel and 
+significant advance beyond the state of the art. 
+ 
+1.3.3 SDG Alignment and Societal Impact 
+The system directly advances United Nations Sustainable Development Goal 10: Reduced 
+Inequalities, specifically Target 10.2 (empower and promote social, economic, and political 
+inclusion of all, regardless of disability) and Target 10.3 (ensure equal opportunity and reduce 
+inequalities of outcome). By enabling real-time Sinhala-to-SSL translation in a freely 
+installable Android application, the system removes the economic and logistical barriers that 
+currently prevent Deaf Sri Lankans from equal participation in healthcare consultations, 
+educational instruction, government services, and workplace communication. Secondary 
+SDG contributions include SDG 3 (Good Health and Well-being: improved healthcare 
+communication for Deaf patients) and SDG 4 (Quality Education: real-time SSL 
+interpretation in Sinhala-medium classrooms). 
+  
+[[PAGE 21]]
+21 
+ 
+2. OBJECTIVE 
+2.1 Main Objective 
+To design and implement a real-time Sinhala Audio to Sinhala Sign Language (SSL) 
+Translation Component that accurately transcribes Sinhala spoken input, normalizes Sinhala 
+morphology, detects emotion and prosody, and generates expressive SSL signing via a 3D 
+bone-animated avatar on an Android application, as part of the integrated R26-SE-019 
+transformer-based communication system for Deaf–hearing interaction. 
+2.2 Specific Objectives 
+ 
+1. Implement a Sinhala ASR pipeline using Whisper-medium fine-tuned on Common 
+V oice 13 Sinhala, achieving WER below 10%. 
+ 
+2. Develop a Sinhala morphological normalization module using sinling to convert 
+inflected Sinhala forms to SSL-compatible base forms, enabling correct gloss 
+mapping for agglutinative word variants. 
+ 
+ 
+3. Build a prosody and emotion analysis pipeline using librosa (F0, RMS, MFCCs) and 
+XLM-RoBERTa (6-class Sinhala emotion classifier), achieving emotion accuracy 
+above 85%. 
+ 
+4. Design and train a Unified Emotion-Conditioned Sign Synthesis Transformer (mT5-
+small) with dual output heads: gloss token generation and 3D bone rotation regression 
+(21 bones × 3 Euler angles per frame). 
+ 
+ 
+5. Construct an original Sinhala-to-SSL parallel corpus of 500+ sentence pairs at the 
+School for the Deaf, Ratmalana, using Media Pipe and Kalid kit for ground-truth bone 
+capture. 
+ 
+6. Deliver a FastAPI WebSocket endpoint streaming bone JSON at 30fps to an Expo 
+Android application rendering a live 3D SSL avatar at 25fps+ using expo-gl and 
+Three.js, with end-to-end latency below 500ms. 
+ 
+ 
+7. Validate the system with a Deaf user comprehension study achieving at least 80% 
+correct sign identification. 
+ 
+ 
+[[PAGE 22]]
+22 
+ 
+ 
+3. METHODOLOGY 
+3.1 Research Approach 
+This project follows Design Science Research (DSR) methodology (Hevner et al., 2004), 
+which is the established framework for research that creates and evaluates innovative IT 
+artefacts as its primary contribution. DSR is appropriate here because the central outputs of 
+the research are the artefacts themselves — the Sinhala-SSL corpus, the fine-tuned ASR 
+model, the unified synthesis transformer, and the Android avatar application — rather than 
+theoretical propositions about the social phenomenon being addressed. 
+The DSR cycle applied in this project consists of five phases: (1) Problem Identification — 
+systematic review of existing systems and identification of the four research gaps (completed 
+in Chapter 1); (2) Objectives Definition — specification of measurable performance targets 
+for each pipeline stage (Chapter 2); (3) Design and Development — iterative construction 
+and testing of each pipeline stage (Chapter 3); (4) Demonstration — integration of all stages 
+and end-to-end system demonstration; and (5) Evaluation — quantitative metric evaluation 
+and Deaf user comprehension study (Section 3.7). 
+The iterative nature of DSR is particularly appropriate for the multi-stage pipeline of this 
+project, where each stage's output quality directly affects all downstream stages. Stages 1 and 
+2b (ASR and morphological normalization) will be developed and validated first, as the 
+quality of Sinhala text normalization is a prerequisite for training the synthesis transformer. 
+The corpus construction (Stage 4 objective) runs in parallel with ASR development to 
+maximise the data available for transformer training. 
+ 
+3.2 Pipeline Architecture 
+The pipeline comprises six sequential processing stages. All stages are Sinhala-specific where 
+required or language-agnostic where the processing operates on acoustic waveforms or 
+geometric data independent of language. The critical architectural distinction from all prior 
+Sinhala sign language work is Stage 2b — Sinhala morphological normalisation — which has 
+no equivalent in any published sign language pipeline for any language. 
+ 
+[[PAGE 23]]
+23 
+ 
+ 
+Figure 1: Sinhala Audio to SSL Translation — 6-Stage Pipeline Architecture 
+ 
+Table 4: Pipeline Stage Architecture — Detailed Summary 
+# Stage Name Input → Output Model / Tool Sinhala-
+Specific? 
+Novel 
+Contribution 
+1 Sinhala ASR 16kHz PCM audio 
+→ Sinhala Unicode 
+text + word 
+timestamps 
+openai/whisper-
+medium fine-tuned 
+(language='si') 
+Yes — Sinhala 
+language token 
+First SSL 
+pipeline with 
+Sinhala audio 
+input 
+2a Prosody 
+Extraction 
+Raw audio → pitch 
+F0, RMS energy, 
+MFCCs 
+librosa 0.10.1 
+(parallel with 
+Stage 2b) 
+No — audio 
+features only 
+Prosody 
+conditioning 
+input for mT5 
+2b★ Sinhala 
+Morphology 
+Inflected Sinhala 
+text → normalised 
+base forms + 
+grammatical 
+annotations 
+sinling (Sinhala-
+native tokeniser 
+and stemmer) 
+Yes — unique to 
+agglutinative 
+Sinhala 
+First 
+morphology 
+stage in any 
+SSL pipeline 
+3 Emotion 
+Classification 
+Sinhala text → 6-
+class emotion label 
++ intensity score 
+FacebookAI/xlm-
+roberta-base (fine-
+tuned on Sinhala) 
+Yes — XLM-R 
+required for 
+Sinhala Unicode 
+First emotion 
+conditioning in 
+Sinhala SSL 
+system 
+4★ Unified mT5 
+Transformer 
+Normalised text + 
+prosody + emotion 
+→ SSL glosses + 
+21-bone rotations @ 
+30fps 
+google/mt5-small 
+with dual output 
+heads 
+Yes — Sinhala 
+(101-language 
+mT5) 
+First unified 
+gloss+bone 
+transformer for 
+any sign 
+language 
+
+[[PAGE 24]]
+24 
+ 
+5-6 WebSocket + 
+Avatar 
+Bone JSON → live 
+3D SSL avatar on 
+Android at 25fps+ 
+FastAPI + Expo + 
+Three.js + expo-gl 
+No — language-
+agnostic 
+Native Android 
+delivery via 
+expo-gl 
+OpenGL ES 
+ 
+3.3 Stage 1 — Sinhala ASR (Whisper) 
+The first stage of the pipeline converts raw Sinhala spoken audio into Unicode text with 
+word-level timestamps. OpenAI Whisper-medium is selected as the base model for four 
+reasons: (1) it is the only publicly available ASR model with confirmed support for Sinhala at 
+sufficient quality for downstream NLP; (2) its encoder-decoder transformer architecture 
+enables fine-tuning on domain-specific data; (3) its multilingual pre-training on 680,000 
+hours of data provides robust noise tolerance essential for real-world deployment; and (4) it 
+provides word-level timestamp alignment necessary for synchronizing bone animation frames 
+with spoken syllables. 
+Base model: openai/whisper-medium — 307M parameters, encoder-decoder transformer, 99-
+language multilingual pre-training 
+Language config: language='sinhala', task='transcribe'; forced_decoder_ids set to Sinhala language 
+token [50252] 
+Fine-tune dataset: Mozilla Common V oice 13.0 Sinhala (~30 hours validated audio) + OpenSLR 
+SLR65 (~300 hours read speech) + custom domain recordings collected at School for the Deaf, 
+Ratmalana 
+Training config: HuggingFace Seq2SeqTrainer; batch_size=16; learning_rate=1e-5; num_epochs=5; 
+early stopping on validation WER; gradient_accumulation_steps=2; fp16=True on GPU 
+Evaluation: WER computed using jiwer with Sinhala-specific Unicode normalisation (removing 
+diacritics, normalising Unicode composition); target WER < 10% on held-out test split 
+Streaming mode: WhisperProcessor with return_timestamps=True enables word-level timestamp 
+output for synchronization with bone animation frame generation 
+3.4 Stage 2b — Sinhala Morphological Normalization (Novel Stage) 
+This stage is architecturally unique — no equivalent preprocessing step exists in any 
+published sign language production pipeline for any language. Its necessity arises directly 
+from Sinhala's agglutinative morphological structure, which creates a vocabulary explosion 
+problem that would make training the synthesis transformer infeasible without normalization. 
+3.4.1 The Agglutinative Problem 
+In Sinhala, a single root verb or noun may appear in dozens of distinct surface forms 
+depending on tense, aspect, person, number, case, and register. For example, the verb root 
+'කනවා' (to eat) appears as 'කනවා' (present, neutral), 'කෑවා' (past), 'කාවි' (past, formal), 
+'කන්නන්' (present, emphatic), 'කන්ට' (infinitive dative), 'කාල' (perfective participle), and 
+[[PAGE 25]]
+25 
+ 
+many others. Each of these is a distinct surface token, but they all correspond to the same 
+SSL gloss: EAT. 
+Without normalization, the synthesis transformer's input vocabulary contains thousands of 
+surface form tokens mapping to a far smaller number of SSL glosses. This creates severe data 
+sparsity — each surface form appears far less frequently in the training corpus than the 
+corresponding base form would — and forces the model to learn separate mappings for what 
+are linguistically identical concepts. The morphological normalization stage addresses this 
+directly by reducing all inflected forms to their base gloss able form before the text is passed 
+to the synthesis transformer. 
+Tool: sinling (pip install sinling) — open-source Sinhala-native NLP library providing tokenization 
+and rule-based stemming for standard Sinhala morphological classes 
+Stemming process: Step 1: tokenize Sinhala Unicode sentence into word tokens; Step 2: apply 
+sinling stemmer to reduce each token to morphological base form; Step 3: extract tense markers 
+(past/present/future) as separate SSL temporal adverb annotations; Step 4: extract case suffixes (ට 
+dative, නේ genitive, විසින් instrumental) and map to SSL spatial grammar markers 
+Example 1: 'නෙදරට ගිය' (went home, dative) → base: ['නෙදර', 'යනවා'] + tense: PAST + case: 
+DATIVE-LOC → SSL gloss: HOME GO [past-marker] [location-right] 
+Example 2: 'ඔහු කෑවා' (he ate) → base: ['ඔහු', 'කනවා'] + tense: PAST → SSL gloss: HE EAT [past-
+marker] 
+Fallback: If sinling confidence score below threshold (0.6), full inflected surface form is passed to 
+transformer with OOV flag; exception dictionary maintained for SSL domain-specific vocabulary 
+(signs related to health, education, numbers) 
+ 
+3.5 Stage 3 — Emotion Classification (XLM-RoBERTa) 
+The emotion classification stage assigns a 6-class emotion label and continuous intensity 
+score to each Sinhala sentence processed by the pipeline. This output serves as a conditioning 
+vector for the synthesis transformer, modulating the amplitude and expressiveness of 
+generated bone rotations to reflect the detected emotional tone of the speaker. 
+Model selection is determined by Dhananjaya et al.'s [19] comprehensive evaluation of pre-
+trained language models on Sinhala: XLM-RoBERTa achieves F1 scores of 72–78% on 
+Sinhala sentiment tasks, compared to 45–52% for multilingual BERT and effectively 0% for 
+English-only models (RoBERTa-base, BERT-base) which produce [UNK] for all Sinhala 
+input. XLM-RoBERTa's pre-training on 100 languages including Sinhala using a shared 
+subword vocabulary of 250,000 tokens ensures that Sinhala Unicode characters are 
+represented as meaningful embeddings rather than unknown tokens. 
+Base model: FacebookAI/xlm-roberta-base — 278M parameters, 12-layer transformer, pre-trained on 
+CommonCrawl in 100 languages including Sinhala 
+Emotion classes: 6 classes: neutral / happy (සතුටු) / sad (දුක්) / angry (නකෝප) / surprised (ආශ්චර්ය) / 
+fearful (බය) 
+[[PAGE 26]]
+26 
+ 
+Fine-tune data: Phase 1: GoEmotions dataset (English, 28 classes → mapped to 6) for label transfer; 
+Phase 2: 500–1000 manually annotated Sinhala emotion sentences collected and labelled by two 
+annotators with inter-annotator agreement measured by Cohen's kappa 
+Output: emotion_class (string) + intensity_score (float 0.0–1.0, derived from softmax probability of 
+predicted class) — both fed as conditioning inputs to mT5 encoder 
+Parallel execution: Stage 3 runs in parallel with Stage 2b on separate CPU thread to minimise total 
+pipeline latency 
+ 
+3.6 Stage 4 — Unified Emotion-Conditioned Sign Synthesis 
+Transformer 
+This is the central novel contribution of the research. A single mT5-based transformer model 
+jointly learns SSL gloss generation and 3D bone animation parameter regression from 
+Sinhala text input, conditioned on prosody and emotion vectors. This replaces the fragmented 
+two-model approach of all prior SSL systems with a unified architecture that shares encoder 
+representations across both output tasks. 
+ 
+ 
+Figure 2: Unified Emotion-Conditioned Sign Synthesis Transformer — mT5 dual-head architecture 
+ 
+Table 5: Unified mT5 Transformer — Full Specification 
+Component Specification Justification / Detail 
+Base architecture google/mt5-small 300M parameter multilingual T5. Pre-trained on mC4 
+corpus in 101 languages including Sinhala. Seq2seq 
+architecture directly applicable to text-to-gloss 
+translation task. mT5 chosen over mt5-base due to 
+training compute constraints (mt5-small trains in ~8 
+hours on single A100 vs ~36 hours for mt5-base). 
+
+[[PAGE 27]]
+27 
+ 
+Encoder input 
+format 
+[Sinhala token embeddings] 
++ [prosody vector 9-dim] + 
+[emotion vector 9-dim] 
+Prosody vector: [F0_mean, F0_std, F0_range, 
+RMS_mean, RMS_std, MFCC1, MFCC2, MFCC3, 
+tempo]. Emotion vector: [one-hot 6-class, intensity 
+score, arousal estimate, valence estimate]. 
+Concatenated as prefix tokens to encoder sequence 
+before standard mT5 processing. 
+Output Head 1 Linear(d_model=512 → 
+vocab_size) + softmax → 
+SSL gloss token sequence 
+Generates SSL gloss tokens autoregressively. 
+V ocabulary includes all SSL base gloss lemmas plus 
+NMM annotation tokens (RAISED_BROWS, 
+HEAD_SHAKE, BODY_LEAN_FWD, etc.). Cross-
+entropy loss L_ce computed against reference gloss 
+sequence from corpus. 
+Output Head 2 ★ Linear(d_model=512 → 
+63) + tanh → bone rotation 
+tensor 
+NOVEL: 63 = 21 bones × 3 Euler angles (X, Y , Z). 
+Bones: rightWrist, leftWrist, rightUpperArm, 
+leftUpperArm, rightLowerArm, leftLowerArm, + all 5 
+right finger proximal/intermediate joints, all 5 left 
+finger proximal/intermediate joints, head, neck, spine. 
+tanh bounds output to [-1, 1] radians. MSE loss L_mse 
+computed against Kalidokit ground truth bone rotations 
+from corpus. 
+Emotion 
+modulation 
+bone_output = bone_raw × 
+(1.0 + emotion_scale × 
+intensity) 
+emotion_scale values per class: neutral=0.0, happy=0.3, 
+sad=-0.2 (reduces amplitude), angry=0.5, 
+surprised=0.4, fearful=0.2. Allows same sign to be 
+produced with contextually appropriate expressiveness 
+without separate models per emotion. 
+Joint training loss L = L_ce(gloss_tokens) + λ 
+× L_mse(bone_rotations), 
+λ=0.5 
+λ=0.5 balances the two loss terms based on empirical 
+tuning on development set. Both heads trained 
+simultaneously from epoch 1; no curriculum scheduling 
+used for the base configuration. 
+Training data 500–1000 Sinhala-SSL 
+triplets (text, gloss, bone 
+sequence) 
+Augmented ×3 via audio speed perturbation (0.8×, 
+1.2×) and bone temporal stretching. 80/10/10 
+train/val/test split stratified by emotion class. Each 
+triplet contains: sinhala_text (string), ssl_glosses (list), 
+bone_frames (list of 63-float arrays at 30fps), 
+emotion_label (string). 
+Inference mode Autoregressive decoding 
+with beam search (beam=4) 
+Gloss tokens generated first; bone rotations generated 
+in parallel with gloss token generation using shared 
+decoder hidden states. Total inference time target: 
+<200ms per sentence on GPU, <400ms on CPU. 
+[[PAGE 28]]
+28 
+ 
+ 
+3.7 Original Corpus Construction — Sinhala-SSL Parallel Dataset 
+The construction of the original Sinhala-SSL parallel corpus is itself a primary research 
+contribution, as no such resource exists in any form. The corpus will be the first publicly 
+available dataset enabling supervised training of Sinhala-to-SSL translation models, and its 
+methodology will be documented and published to serve the broader community. 
+ 
+Table 6: Original Sinhala-SSL Corpus Construction Plan 
+Parameter Specification 
+Target size 500–1,000 parallel sentence–gloss–bone triplets (minimum 500 for model training; 
+1,000 for production-quality results) 
+Sentence domains Healthcare (100): symptoms, medications, appointments; Education (100): 
+classroom instructions, subject vocabulary; Daily life (150): greetings, family, food, 
+transport, time; Government/public services (100): forms, rights, procedures; 
+Emotion-varied (150+): sentences in each of 6 emotion classes minimum 25 per 
+class 
+Sinhala speakers Minimum 3 hearing Sinhala native speakers reading/speaking prompt sentences; age 
+20–50; mixed gender; standard Sri Lankan Sinhala accent 
+SSL signers Minimum 5 Deaf native SSL signers from School for the Deaf, Ratmalana; validated 
+SSL competency by school staff; mixed age and gender 
+Recording setup Sinhala speaker: Shure SM7B microphone, 16kHz mono PCM, Audacity; SSL 
+signer: 1080p camera, adequate lighting, plain background, side and frontal views  
+Landmark capture MediaPipe Holistic 0.10.9: 21 hand landmarks (per hand) + 33 body landmarks + 
+468 face landmarks captured at 30fps from signing video 
+Bone rotation 
+extraction 
+Kalidokit v1.1: converts MediaPipe 2D landmark coordinates to VRM-compatible 
+3D Euler bone rotation angles (21 bones × {x,y,z} radians) at 30fps 
+Alignment Whisper timestamp output aligned to bone frame indices via DTW (Dynamic Time 
+Warping) on word-level timestamps; manual correction for outliers 
+Storage format JSONL: one record per sentence: {id, sinhala_text, ssl_glosses: [], bone_frames: 
+[[63 floats]×N], emotion_label, speaker_id, signer_id, duration_ms} 
+Quality control Two-annotator SSL gloss validation; inter-annotator agreement κ>0.75 required; 
+bone sequence smoothness check (max frame-to-frame delta < 0.5 rad) 
+[[PAGE 29]]
+29 
+ 
+Ethics SLIIT Ethics Review Board approval; informed consent in Sinhala and English; 
+anonymisation; data stored on encrypted institutional storage; deleted after 
+publication 
+3.8 Stages 5–6 — FastAPI WebSocket and Expo Android Avatar 
+3.8.1 FastAPI WebSocket Endpoint 
+The FastAPI endpoint serves as the bridge between the Python-based AI pipeline and the 
+JavaScript-based Android application. A WebSocket connection is used (rather than REST) 
+because it maintains a persistent bidirectional channel, enabling the server to push bone 
+rotation frames to the client as they are generated autoregressively by the mT5 decoder — 
+without waiting for the complete sentence to be processed. This streaming approach is 
+essential for achieving sub-500ms latency. 
+Endpoint: ws://[server]/sign-stream — accepts Sinhala audio chunks as binary WebSocket messages; 
+returns bone rotation JSON frames as the model generates them 
+Frame format: {frame_id: int, timestamp_ms: float, bones: {boneName: {x: float, y: float, z: float}, 
+...}, gloss: string|null, emotion: string} 
+Concurrency: uvicorn with asyncio event loop; each WebSocket connection handled as an async 
+coroutine; model inference runs in a thread pool executor to avoid blocking the event loop 
+Latency target: First bone frame returned within 500ms of audio capture start; subsequent frames at 
+30fps steady state 
+ 
+3.8.2 Expo Android Application 
+The Android application provides the Deaf user's interface, receiving bone rotation frames 
+from the WebSocket and applying them to a 3D VRM avatar skeleton in real time. Expo SDK 
+51 with expo-gl is chosen over alternative approaches based on a systematic evaluation of 
+Android 3D rendering options: 
+• Unity: rejected — requires complete C# rewrite of all existing JavaScript three-vrm 
+code; 150+ MB APK size; no code reuse from web prototype 
+• React Native WebView: rejected — WebGL rendering inside WebView produces 
+black screen on Android 14 due to compositing layer restrictions; confirmed in testing 
+• Expo + expo-gl: selected — provides native OpenGL ES surface accessible from 
+JavaScript via the same Three.js API used in web prototyping; produces standard 
+APK via EAS Build; sustains 25fps on mid-range Android hardware 
+Build command: eas build -p android --profile preview → produces installable .apk for sideloading 
+on target devices 
+Avatar rendering: @pixiv/three-vrm v1.0.11 loads VRM humanoid model; bone rotations from 
+WebSocket applied per-frame via bone.quaternion.slerp(targetQuaternion, lerpFactor=0.2) for smooth 
+interpolation 
+[[PAGE 30]]
+30 
+ 
+Audio capture: expo-av records Sinhala speech at 16kHz mono PCM; streams audio chunks to 
+FastAPI WebSocket with Accept-Language header set to 'si' (Sinhala) 
+ 
+3.9 Technology Stack 
+Table 7: Complete Technology Stack — Versions, Purpose, and Sinhala Language Support 
+Tool / Framework Version Purpose Sinhala Support / Justification 
+PyTorch 2.2.0 Deep learning 
+training and GPU 
+inference 
+Language-agnostic; CUDA 12.1 support; 
+most widely supported framework for 
+HuggingFace models 
+HuggingFace 
+Transformers 
+4.39.0 Whisper, XLM-
+RoBERTa, mT5 
+model loading, 
+training, inference 
+Full multilingual support; Seq2SeqTrainer 
+for joint multi-task training 
+openai/whisper-
+medium 
+via 
+transformers 
+Sinhala ASR — 
+audio to Unicode text 
+✓ Native Sinhala (language code 'si'); one of 
+only two ASR models supporting Sinhala at 
+research quality 
+sinling pip install 
+sinling 
+Sinhala tokenisation, 
+stemming, 
+morphological 
+analysis 
+✓ Sinhala-native — the only available open-
+source Sinhala NLP preprocessing library 
+FacebookAI/xlm-
+roberta-base 
+via 
+transformers 
+Sinhala emotion 
+classification (6-
+class) 
+✓ 100 languages including Sinhala; 
+confirmed best for Sinhala by Dhananjaya et 
+al. [19] 
+google/mt5-small via 
+transformers 
+Unified SSL gloss + 
+bone synthesis 
+✓ 101 languages including Sinhala; seq2seq 
+architecture; 300M parameters 
+librosa 0.10.1 Pitch F0, RMS 
+energy, MFCC 
+extraction from audio 
+Language-agnostic — operates on acoustic 
+waveform; no language dependency 
+mediapipe 0.10.9 SSL signing 
+landmark capture for 
+corpus construction 
+Language-agnostic — pose estimation from 
+video frames 
+FastAPI + 
+uvicorn 
+0.110 / 0.29 Async WebSocket 
+API for bone frame 
+streaming 
+Language-agnostic; async WebSocket 
+support; <1ms per-frame overhead 
+[[PAGE 31]]
+31 
+ 
+Expo + expo-gl ~51.0 / ~14.0 Android native 
+OpenGL ES avatar 
+rendering 
+Language-agnostic; eas build produces .apk; 
+expo-gl provides native GL surface 
+Three.js + 
+@pixiv/three-vrm 
+r163 / v1.0.11 3D VRM avatar 
+skeleton and bone 
+animation 
+Language-agnostic; VRM standard 
+humanoid bone schema; slerp for smooth 
+rotation 
+kalidokit npm v1.1 MediaPipe landmarks 
+→ VRM bone Euler 
+rotations (corpus 
+construction) 
+Language-agnostic — geometric coordinate 
+transform 
+jiwer + sacrebleu latest WER and BLEU-4 
+evaluation with 
+Unicode support 
+Sinhala Unicode compatible with proper 
+tokenisation 
+ 
+3.10 Evaluation Strategy 
+The evaluation plan employs both quantitative automatic metrics and qualitative human 
+evaluation. Each metric is tied to a specific pipeline stage and a pre-specified target value. 
+The human evaluation (Deaf user comprehension study) constitutes the primary validity 
+criterion for the system as a whole, as it directly measures whether the generated SSL signing 
+is understandable by the target user group. 
+ 
+Table 8: Evaluation Metrics — Method, Target, Tool, and Stage 
+Metric Measurement 
+Method 
+Target Tool Stage / Interpretation 
+Word Error 
+Rate (WER) 
+Whisper 
+transcription vs. 
+Sinhala reference 
+transcripts on 100-
+sentence held-out 
+test set 
+< 10% jiwer Stage 1: WER > 10% 
+propagates errors to all 
+downstream stages; 10% 
+accepted as practical 
+threshold for conversational 
+ASR 
+Sinhala 
+Morphology 
+Accuracy 
+% sentences where 
+sinling produces 
+correct base forms 
+vs. linguist-
+verified reference 
+≥ 90% Manual evaluation 
+(20 sentences × 5 
+annotators) 
+Stage 2b: ensures gloss 
+mapping operates on correct 
+base forms; linguist 
+verification by SSL-
+competent annotator 
+[[PAGE 32]]
+32 
+ 
+Emotion 
+Classification 
+Accuracy 
+F1-score (macro) 
+on 6-class Sinhala 
+emotion held-out 
+test set (100 
+sentences) 
+≥ 85% sklearn 
+classification_report 
+Stage 3: 85% aligns with 
+human inter-annotator 
+agreement for emotion 
+annotation tasks 
+BLEU-4 
+(Gloss) 
+Corpus BLEU-4 
+between predicted 
+and reference SSL 
+gloss sequences on 
+10% test split 
+≥ 0.40 sacrebleu Stage 4 Head 1: BLEU-4 of 
+0.40 corresponds to 'good' 
+translation quality in sign 
+language production 
+literature (Saunders et al., 
+2020 [12]) 
+Bone Rotation 
+MSE 
+Mean squared 
+error between 
+predicted and 
+Kalidokit ground-
+truth Euler angles 
+on test split 
+< 0.05 rad numpy Stage 4 Head 2: 0.05 rad ≈ 
+2.9° angular error; 
+perceptually imperceptible in 
+avatar rendering 
+End-to-End 
+Latency 
+time.perf_counter 
+from audio capture 
+start to first bone 
+frame received by 
+Android app 
+< 500ms Python 
+perf_counter + JS 
+Date.now() 
+Full pipeline: 500ms is 
+threshold for natural 
+conversational rhythm (ITU-
+T G.114 recommendation) 
+Deaf User 
+Comprehension 
+Forced-choice 
+task: participants 
+(n≥10 Deaf 
+signers) view 
+avatar and select 
+meaning from 4 
+options 
+≥ 80% Survey instrument System-level: 80% 
+comprehension with 4-
+choice task = strong 
+performance above 25% 
+random chance; conducted at 
+School for the Deaf, 
+Ratmalana 
+Avatar Frame 
+Rate 
+Sustained FPS 
+measured over 30-
+second signing 
+sequence on target 
+Android device 
+≥ 25fps Expo DevTools FPS 
+monitor 
+Stage 6: 25fps minimum for 
+fluid motion perception; 
+tested on Android 8.0+ mid-
+range device 
+ 
+ 
+ 
+ 
+ 
+[[PAGE 33]]
+33 
+ 
+4. HIGH-LEVEL SYSTEM ARCHITECTURE 
+ 
+4.1 Component Overview 
+The R26-SE-019 system is a four-component integrated platform for bidirectional Deaf–
+hearing communication. This proposal covers Component 1: the Speech-to-Sign Linguistic 
+and Prosodic Processing Component, which handles the Sinhala audio input to SSL signing 
+output direction. Component 2 (3D avatar rendering and display, Chamara R M L K) receives 
+bone animation streams from Component 1. Components 3 and 4 address the reverse 
+direction (SSL recognition and Sinhala speech synthesis). 
+Component 1 operates as a self-contained AI inference pipeline with a public WebSocket 
+API, enabling it to serve multiple concurrent Deaf users simultaneously while remaining fully 
+upgradeable without affecting the avatar rendering or reverse-direction components. 
+ 
+4.2 System Architecture and Data Flow 
+ 
+ 
+Figure 3: R26-SE-019 — Full System Architecture and Component Interactions 
+ 
+The data flow through the system follows a linear progression from hearing user speech 
+capture to Deaf user avatar display. The hearing user's Sinhala speech is captured at 16kHz 
+mono PCM by expo-av within the Android application and immediately streamed over a 
+secure WebSocket connection (WSS) to the FastAPI backend hosted on a cloud GPU 
+instance. 
+On the backend, the audio stream is processed in two parallel threads: Thread A runs the 
+Whisper ASR model to produce Sinhala Unicode text with word timestamps, while Thread B 
+runs librosa prosody extraction on the same audio buffer to produce the 9-dimensional 
+prosody feature vector. When Thread A completes, the Sinhala text is passed synchronously 
+
+[[PAGE 34]]
+34 
+ 
+through sinling morphological normalisation (Stage 2b) and then to XLM-RoBERTa for 
+emotion classification (Stage 3). The normalised text, prosody vector, and emotion vector are 
+then concatenated and passed to the mT5 synthesis transformer. 
+The mT5 model generates output autoregressively. As each decoder timestep is completed, 
+the corresponding bone rotation frame (63 floats) is immediately serialised as JSON and 
+pushed to the Android client over the open WebSocket connection. The client applies each 
+received bone frame to the VRM avatar skeleton using bone.quaternion.slerp() in the Three.js 
+animation loop, producing continuous smooth signing motion that begins appearing within 
+500ms of the hearing user starting to speak. 
+ 
+4.3 Novel vs. Prior Architecture 
+ 
+ 
+Figure 4: Prior Work (Gamage et al., 2023) vs. This Work — Architectural Comparison 
+ 
+Table 9: Novel Architecture vs. Prior Approach — Detailed Feature Comparison 
+Dimension Prior: Gamage et al. (ICAC 2023) 
+[20] 
+This Work — Novel Architecture 
+Speech input None — text string input only; no ASR 
+processing 
+Sinhala spoken audio → Whisper-medium 
+fine-tuned on Sinhala; word-level 
+timestamps for animation sync 
+Morphological 
+prep 
+None — assumes English-style word 
+forms; inflected Sinhala forms treated 
+as OOV 
+sinling morphological normalisation; 
+agglutinative stems extracted; tense/case 
+annotations for SSL grammar 
+Emotion source CNN classifier on face video of 
+speaker (requires camera pointed at 
+hearing user face) 
+XLM-RoBERTa on Sinhala transcribed text 
++ librosa acoustic features; no camera of 
+speaker required 
+Model count Two separate CNNs with no shared 
+representation 
+Single unified mT5 transformer; encoder 
+shared between gloss and bone output heads 
+
+[[PAGE 35]]
+35 
+ 
+Sign output type Static pre-rendered GIF animation 
+selected from lookup table 
+Live autoregressive 21-bone Euler rotation 
+sequence generated for any Sinhala input 
+Novel signs Cannot generate novel signs — limited 
+to GIF library vocabulary 
+Can generalise to any Sinhala input within 
+training distribution; novel sign sequences 
+generated 
+Real-time No — batch processing; full sentence 
+processed before any output 
+Yes — bone frames streamed as generated; 
+first frame within 500ms 
+Prosody 
+conditioning 
+None 9-dimensional prosody vector (F0, RMS, 
+MFCCs) conditions mT5 encoder; NMMs 
+derived from prosody 
+Emotion 
+modulation 
+Discrete selection (angry GIF vs. 
+neutral GIF) 
+Continuous bone amplitude modulation: 
+bone_out × (1 + scale × intensity) 
+Mobile delivery Web browser (no native app) Native Android APK via Expo + expo-gl; 
+native OpenGL ES rendering; no browser 
+dependency 
+Corpus No original corpus created — used 
+existing rule-based annotations 
+First Sinhala-SSL parallel corpus: 500+ 
+triplets with bone ground truth from 
+Kalidokit + MediaPipe 
+ 
+4.4 Scalability and Security 
+The pipeline is containerised using Docker with a single Dockerfile that packages the Python 
+AI environment (PyTorch, HuggingFace, sinling, FastAPI) and exposes the WebSocket 
+endpoint on port 8000. Horizontal scaling is achieved by deploying multiple container 
+replicas behind an nginx WebSocket-aware load balancer, with each container handling 
+independent WebSocket sessions with no shared state. 
+Security measures include: (1) WSS (TLS 1.3) for all WebSocket connections using Let's 
+Encrypt certificates; (2) JWT token authentication for WebSocket connection establishment; 
+(3) in-memory-only audio processing — no Sinhala audio is persisted to disk or logged; (4) 
+rate limiting (5 concurrent WebSocket sessions per IP) to prevent resource exhaustion; (5) 
+model files stored in read-only Docker volumes with no runtime modification capability. 
+The modular architecture enables independent upgrading of each model component. If a 
+superior Sinhala ASR model becomes available, it can replace Whisper without any changes 
+to the morphological normalisation, emotion, or synthesis stages. The mT5 model can be 
+retrained on an expanded corpus and hot-swapped via Docker image update without 
+application downtime. 
+[[PAGE 36]]
+36 
+ 
+5. USER REQUIREMENTS 
+5.1 Stakeholder Identification 
+Five primary stakeholder groups are identified for the R26-SE-019 system, each with distinct 
+needs and interaction patterns: 
+• Primary: Deaf SSL-using individuals in Sri Lanka — the primary beneficiaries. They 
+interact with the Expo Android application, viewing the 3D SSL signing avatar as the 
+output of real-time Sinhala speech translation. Their requirement is that the avatar 
+produces SSL signing that is comprehensible, grammatically correct, and 
+appropriately expressive. 
+ 
+• Secondary: Hearing individuals communicating with Deaf users in Sinhala-speaking 
+environments — family members, healthcare providers, teachers, employers, and 
+public servants. They interact by speaking Sinhala naturally, with no system-specific 
+training required. Their requirement is that the system functions without disrupting 
+natural conversational flow. 
+ 
+• Tertiary: Healthcare and public service providers in Sri Lanka — hospitals, banks, 
+courts, government offices — who require accessible communication channels for 
+Deaf clients under UNCRPD obligations. Their requirement is institutional reliability 
+and audit capability. 
+ 
+ 
+• Quaternary: Educational institutions — the School for the Deaf, Ratmalana and 
+mainstream schools with Deaf students — requiring classroom-viable real-time SSL 
+interpretation of teacher instruction delivered in Sinhala. 
+ 
+• System developers: Chamara R M L K (3D avatar rendering component), Gimhan T P 
+K, and Ranathunga R A K N (reverse-direction components) — requiring a well-
+documented, stable WebSocket API with a versioned JSON bone frame schema. 
+ 
+5.2 Functional Requirements 
+Table 10: System Functional Requirements — Detailed Specification 
+ID Requirement Name Description Acceptance Criterion 
+FR1 Sinhala Audio Input System shall accept real-time Sinhala 
+spoken audio from Android microphone 
+via expo-av and initiate processing 
+within 100ms of voice activity detection 
+First WebSocket frame 
+returned within 500ms of 
+audio capture start 
+[[PAGE 37]]
+37 
+ 
+FR2 Sinhala Unicode 
+Transcription 
+System shall produce accurate Sinhala 
+Unicode text transcription of spoken 
+input using fine-tuned Whisper ASR, 
+with word-level timestamps 
+WER < 10% on held-out 
+Sinhala test set (jiwer 
+evaluation) 
+FR3 Morphological 
+Normalisation 
+System shall apply sinling stemming to 
+all Sinhala input tokens, reducing 
+inflected forms to SSL-compatible base 
+forms, with tense and case annotation 
+extraction 
+≥ 90% correct base forms vs. 
+linguist-annotated reference 
+on 20-sentence evaluation 
+set 
+FR4 Emotion Classification System shall classify Sinhala transcribed 
+text into 6 emotional categories using 
+XLM-RoBERTa and return both class 
+label and continuous intensity score 
+Emotion F1 ≥ 85% macro-
+averaged on held-out Sinhala 
+test set 
+FR5 Prosody Extraction System shall extract pitch F0, RMS 
+energy, and MFCCs from Sinhala audio 
+in parallel with ASR using librosa, 
+producing a 9-dimensional prosody 
+conditioning vector 
+Prosody extraction 
+completes within 50ms of 
+audio buffer availability 
+FR6 SSL Gloss Generation System shall generate grammatically 
+correct SSL gloss token sequences from 
+normalised Sinhala input, including 
+embedded NMM annotations for 
+grammatical facial expressions 
+BLEU-4 ≥ 0.40 on held-out 
+corpus test split 
+FR7 3D Bone Rotation 
+Output 
+System shall output per-frame 21-bone 
+3D Euler rotation data at 30fps, emotion-
+modulated in amplitude, via the mT5 
+bone regression head 
+Bone MSE < 0.05 rad vs. 
+Kalidokit ground truth on 
+test split 
+FR8 WebSocket Streaming System shall transmit bone JSON frames 
+to Android app via FastAPI WebSocket 
+as they are generated, without buffering 
+complete sentence 
+First frame delivered within 
+500ms; subsequent frames at 
+30fps 
+FR9 Android Avatar 
+Rendering 
+Expo app shall render 3D VRM signing 
+avatar applying received bone rotations 
+via Three.js slerp interpolation at 
+minimum 25fps 
+Sustained ≥ 25fps on 
+Android 8.0+ device over 
+30-second signing sequence 
+FR10 Sinhala Language 
+Compliance 
+All NLP and AI components shall 
+natively support Sinhala Unicode input 
+— English-only models are prohibited 
+Zero [UNK] tokens 
+produced for standard 
+Sinhala Unicode characters 
+[[PAGE 38]]
+38 
+ 
+ 
+5.3 Non-Functional Requirements 
+ 
+Table 11: System Non-Functional Requirements 
+ID Category Requirement Acceptance Criterion 
+NFR1 Performance End-to-end latency from Sinhala audio 
+capture start to first avatar animation frame 
+shall be below 500ms under standard 
+conditions (cloud GPU, 4G network 
+connection) 
+Latency < 500ms in 95th 
+percentile of 100 test 
+sentences 
+NFR2 Accuracy ASR WER < 10%; Emotion F1 > 85%; Gloss 
+BLEU-4 > 0.40; Bone MSE < 0.05 rad; User 
+comprehension ≥ 80% 
+All five metrics 
+simultaneously met on 
+respective evaluation sets 
+NFR3 Language 
+Compliance 
+All NLP models must natively support 
+Sinhala Unicode (U+0D80–U+0DFF); 
+English-only models are not permitted at any 
+pipeline stage 
+No model component 
+produces [UNK] tokens for 
+standard Sinhala Unicode 
+characters 
+NFR4 Reliability System shall maintain 99% uptime during all 
+evaluation sessions; WebSocket 
+disconnections shall be auto-reconnected by 
+the client within 2 seconds 
+Zero unrecovered 
+disconnections during 20-
+hour evaluation period 
+NFR5 Security Sinhala audio shall not be persisted to disk or 
+logged; all communications shall use WSS 
+(TLS 1.3); JWT authentication required for 
+WebSocket connection 
+Penetration test confirms no 
+audio logging; TLS 
+certificate validation passes 
+NFR6 Portability Docker container shall deploy on any 
+CUDA-capable cloud GPU instance (AWS 
+g4dn.xlarge or equivalent) without code 
+modification 
+Container starts and passes 
+health check within 3 
+minutes on fresh GPU 
+instance 
+NFR7 Mobile 
+Compatibility 
+Android APK shall install and operate on 
+Android 8.0+ (API Level 26+) without 
+additional configuration or permissions 
+beyond microphone and internet 
+Successful installation and 
+25fps rendering on 3 
+different Android 8.0+ test 
+devices 
+NFR8 Maintainability Each AI model component (Whisper, XLM-
+R, mT5) shall be independently replaceable 
+via Docker image rebuild without modifying 
+other components 
+Model hot-swap completes 
+within 10 minutes; all FRs 
+pass after swap 
+ 
+[[PAGE 39]]
+39 
+ 
+6. COMMERCIALIZATION PLAN 
+6.1 Target Market and Customer Persona 
+The commercialization strategy targets three distinct market segments with different 
+purchasing behaviors and value propositions 
+ 
+6.1.1 Institutional Market (Primary) 
+The institutional market comprises Sri Lankan healthcare providers, educational institutions, 
+and government agencies with legal obligations under the UNCRPD and national disability 
+legislation to provide accessible communication. The primary buyer persona is an HR or 
+accessibility manager at a hospital, school, or government department who currently pays 
+LKR 200,000–400,000 annually for ad-hoc interpreter services and is actively seeking a 
+scalable digital alternative. This segment values reliability, compliance documentation, and 
+institutional pricing models. 
+Key institutional targets include: the Sri Lanka Ministry of Health (500+ hospitals and 
+clinics), the Ministry of Education (500+ state schools), the Department of Government 
+Information, Sri Lanka Telecom, and Bank of Ceylon — all of which have public-facing 
+service desks regularly accessed by Deaf Sri Lankans. 
+ 
+6.1.2 Consumer Market (Secondary) 
+The consumer segment comprises Deaf individuals and their hearing family members who 
+would benefit from a personal communication tool. The primary buyer persona is a hearing 
+parent of a Deaf child, or a hearing spouse, who currently relies on basic gesture-based 
+communication or a family member who has self-taught limited SSL. This segment values 
+ease of installation, offline capability, and one-time pricing. 
+ 
+6.1.3 NGO and Government Grant Market 
+Given the strong SDG alignment of the system, significant funding opportunity exists 
+through international development organisations including UNDP Sri Lanka, USAID Asia 
+Disability Innovation Fund, and the EU Horizon Accessibility Fund. The Sri Lanka National 
+Secretariat for Persons with Disabilities administers annual grants for assistive technology 
+development and deployment. 
+ 
+[[PAGE 40]]
+40 
+ 
+6.2 Value Proposition 
+The system delivers the first real-time, emotionally expressive, Sinhala-to-SSL 
+communication bridge, eliminating the dependency on human interpreters in standard Sri 
+Lankan interaction settings. Quantifiable value: a single institutional license at USD 
+200/month eliminates LKR 200,000–400,000 in annual interpreter costs per Deaf employee 
+(payback period under 3 months). Qualitative value: genuine Deaf inclusion in spontaneous 
+Sinhala conversation — not text captioning, but sign language — delivered to the user's own 
+Android device. 
+ 
+6.3 Revenue Model 
+ 
+• SaaS Institutional Subscription: USD 150–300/month per organisation; unlimited 
+concurrent users within organisation; annual contract; includes SSL model updates as 
+SSL corpus grows 
+• API Licensing: USD 0.002 per signing session for third-party integration; targets 
+telehealth platforms, e-government portals, and educational software vendors in Sri 
+Lanka 
+• Consumer Android App: one-time purchase LKR 1,500 (~USD 5) on Google Play 
+Store; offline mode with pre-compiled compact model variant 
+• Government/NGO Grants: SLIIT technology transfer agreement with 15% royalty; 
+UNDP and USAID grant applications for free deployment in public hospitals and 
+schools 
+ 
+6.4 Competitive Advantage and Intellectual Property 
+Three elements of the system constitute potential intellectual property protectable through 
+patent or trade secret: (1) the Unified Emotion-Conditioned Sign Synthesis Transformer 
+architecture — the dual-head mT5 with joint gloss and bone regression loss — which has no 
+direct prior art; (2) the sinling-to-SSL morphological normalisation pipeline — the specific 
+rules for mapping Sinhala tense markers and case suffixes to SSL grammatical annotations; 
+and (3) the Sinhala-SSL parallel corpus itself, which as a curated dataset may be protectable 
+as a database right under Sri Lankan intellectual property law. 
+The system's regional specificity provides a competitive moat that global players cannot 
+easily replicate: Microsoft, Google, and Meta do not have SSL linguists, partnerships with the 
+School for the Deaf, Ratmalana, or a Sinhala-SSL training corpus. Replicating the corpus 
+alone would require 12–18 months of data collection effort with qualified SSL signers. 
+ 
+[[PAGE 41]]
+41 
+ 
+6.5 Cost Estimation and Pricing Strategy 
+Development cost is dominated by cloud GPU compute for model training and the data 
+collection effort at the School for the Deaf. Post-development, ongoing costs are primarily 
+API hosting and corpus expansion. The pricing strategy targets break-even within 6 months 
+of commercial launch with 5 institutional subscribers at the USD 200/month entry tier. 
+ 
+  
+[[PAGE 42]]
+42 
+ 
+7. BUDGET AND JUSTIFICATION  
+ 
+Budget Item Estimated Cost Currency Justification 
+Cloud GPU Compute — 
+Whisper fine-tuning (AWS 
+g4dn.xlarge, ~40 hours) 
+USD 240 USD T4 GPU; Whisper fine-tuning 
+requires GPU acceleration not 
+available on local hardware; ~40 
+hours at USD 0.526/hr 
+Cloud GPU Compute — XLM-
+R fine-tuning (AWS 
+g4dn.xlarge, ~20 hours) 
+USD 120 USD T4 GPU; XLM-R fine-tuning on 
+Sinhala emotion data; ~20 hours 
+Cloud GPU Compute — mT5 
+joint training (AWS 
+g4dn.xlarge, ~120 hours) 
+USD 840 USD T4 GPU; mT5-small joint training 
+on 500+ corpus pairs; ~120 hours 
+including hyperparameter search 
+Cloud API Hosting (FastAPI + 
+Docker, 6 months AWS EC2) 
+USD 400 USD t2.medium CPU instance for 
+WebSocket API hosting during 
+evaluation period; $67/month × 6 
+months 
+Software Licenses USD 0 USD All components (HuggingFace, 
+PyTorch, sinling, Three.js, Expo, 
+FastAPI, mediapipe) are open-
+source under Apache 2.0, MIT, or 
+BSD licenses; zero licensing cost 
+Data Collection — Transport to 
+School for Deaf, Ratmalana (12 
+sessions) 
+LKR 18,000 LKR Bus and tuk-tuk transport for 12 
+data collection sessions; estimated 
+LKR 1,500/session round trip 
+Data Collection — Recording 
+equipment rental 
+LKR 8,000 LKR HD camera rental for signing 
+video capture; lighting equipment; 
+microphone stand 
+Participant compensation (Deaf 
+signers, 5 persons × 10 
+sessions) 
+LKR 25,000 LKR LKR 500/session per participant; 
+ethical compensation for time; 
+approved by SLIIT Ethics Board 
+SSL linguist annotation review 
+(10 hours) 
+LKR 15,000 LKR LKR 1,500/hour; SSL-competent 
+annotator from School for Deaf to 
+validate gloss sequences 
+Report printing and 
+documentation 
+LKR 5,000 LKR Final project report printing × 3 
+copies; binding; ethics submission 
+materials 
+[[PAGE 43]]
+43 
+ 
+TOTAL (USD equivalent) ~USD 1,700 USD Cloud compute: USD 1,600; LKR 
+items: ~USD 110 at LKR 
+300/USD exchange rate 
+ 
+ 
+ 
+  
+[[PAGE 44]]
+44 
+ 
+8. WORK BREAKDOWN STRUCTURE (WBS) 
+ 
+The work breakdown structure allocates tasks across 10 phases spanning the 24-week project 
+timeline. Phases 3 and 4 run in parallel (ASR fine-tuning and data collection) to maximise the 
+training data available for the synthesis transformer in Phase 6. The critical path runs through 
+Phases 4→6→7→8→9. 
+ 
+Table 13: Work Breakdown Structure — Tasks, Deliverables, Duration, and Dependencies 
+# Task Deliverable Weeks Dependencies 
+1 Literature review, SSL 
+domain study, and 
+technical environment 
+setup (conda, PyTorch 2.2, 
+HuggingFace 4.39, 
+sinling, mediapipe, 
+Three.js) 
+Research synthesis 
+report; configured ML 
+environment; verified 
+Sinhala ASR baseline 
+WER on Common 
+V oice 
+Wk 1–3 None 
+2 Whisper Sinhala fine-
+tuning on Common V oice 
+13.0 Sinhala + OpenSLR 
+SLR65 
+Fine-tuned Whisper-
+medium model 
+checkpoint; WER 
+evaluation report on 
+Sinhala held-out test 
+set 
+Wk 3–7 Phase 1 (environment) 
+3 Data collection at School 
+for the Deaf, Ratmalana 
+(12 sessions, 500+ 
+Sinhala-SSL pairs); 
+sinling morphology 
+module development and 
+evaluation 
+Original Sinhala-SSL 
+parallel corpus 
+(JSONL); sinling 
+normalisation module 
+with ≥ 90% accuracy 
+report 
+Wk 4–9 SLIIT Ethics approval 
+(Wk 1) 
+4 XLM-R Sinhala emotion 
+classifier fine-tuning; 
+librosa prosody extraction 
+module 
+Emotion classifier 
+with ≥ 85% F1; 
+prosody extraction 
+module with latency < 
+50ms 
+Wk 6–10 Phase 1 
+5 Unified mT5 synthesis 
+transformer design, 
+training, and evaluation 
+(joint gloss + bone heads) 
+Trained mT5 model: 
+BLEU-4 ≥ 0.40 and 
+bone MSE < 0.05; 
+training curves; 
+ablation study report 
+Wk 9–16 Phases 3, 4 (corpus + 
+models) 
+[[PAGE 45]]
+45 
+ 
+6 FastAPI WebSocket 
+endpoint implementation, 
+bone frame streaming, and 
+load testing 
+Live /sign-stream 
+WebSocket endpoint; 
+latency benchmarks < 
+500ms; Docker 
+container 
+Wk 14–18 Phase 5 (mT5 model) 
+7 Expo Android application 
+development (expo-gl + 
+Three.js + three-vrm 
+avatar) and APK build 
+Android .apk with live 
+3D SSL avatar; ≥ 
+25fps rendering; 
+WebSocket integration 
+tested 
+Wk 16–20 Phase 6 (WebSocket) 
+8 End-to-end system 
+integration testing; user 
+evaluation study with 
+Deaf participants (n≥10) 
+at School for the Deaf, 
+Ratmalana 
+User evaluation report: 
+comprehension ≥ 80%, 
+full latency 
+breakdown, FPS 
+measurements 
+Wk 19–22 Phase 7 (app) 
+9 Performance optimisation 
+(Whisper quantisation, 
+mT5 pruning, expo-gl 
+shader optimisation); 
+regression testing 
+Optimised pipeline 
+meeting all NFR 
+targets; regression test 
+report 
+Wk 20–23 Phase 8 (eval results) 
+10 Final project report 
+writing, documentation, 
+code cleanup, GitHub 
+release, supervisor review, 
+and SLIIT submission 
+Complete final project 
+report; GitHub 
+repository with 
+README; Docker 
+image published 
+Wk 21–24 All phases 
+ 
+ 
+  
+[[PAGE 46]]
+46 
+ 
+9. GANTT CHART 
+The following Gantt chart presents the 24-week project timeline in biweekly blocks. Each 
+filled cell (■) represents an active two-week sprint for that task. The critical path is 
+highlighted by the sequential dependency of Phases 5 → 6 → 7 → 8. 
+ 
+Phase / 
+Task 
+W1-
+2 
+W3-
+4 
+W5-
+6 
+W7-
+8 
+W9-
+10 
+W11-
+12 
+W13-
+14 
+W15-
+16 
+W17-
+18 
+W19-
+20 
+W21-
+22 
+W23-
+24 
+1. Lit 
+Review + 
+Setup 
+■ ■           
+2. Whisper 
+Sinhala 
+Fine-Tuning 
+ ■ ■ ■         
+3. Corpus 
+Collection + 
+sinling 
+  ■ ■ ■        
+4. XLM-R 
+Emotion + 
+librosa 
+  ■ ■ ■        
+5. Unified 
+mT5 
+Transformer 
+    ■ ■ ■ ■     
+6. FastAPI 
+WebSocket 
+API 
+      ■ ■ ■    
+7. Expo 
+Android 
+Avatar App 
+       ■ ■ ■   
+8. User 
+Evaluation 
+Study 
+         ■ ■  
+9. 
+Optimisation 
++ Testing 
+         ■ ■ ■ 
+[[PAGE 47]]
+47 
+ 
+10. Report 
+Writing + 
+Submission 
+          ■ ■ 
+ 
+Note: Phases 3 and 4 run in parallel during Weeks 3–10. Phase 2 (Whisper fine-tuning) 
+begins in Week 3 independently of corpus collection and completes by Week 7, providing 
+the fine-tuned ASR model required for corpus alignment in Phase 3. The mT5 transformer 
+training (Phase 5) begins in Week 9 with an initial partial corpus and continues as 
+additional data from Phase 3 becomes available. 
+ 
+  
+[[PAGE 48]]
+48 
+ 
+10. REFERENCES  
+ 
+[1] World Federation of the Deaf, "Position Paper on Access to National Sign Languages as a Health Need," Jan. 
+2023. [Online]. Available: https://wfdeaf.org 
+[2] M. Fernando and K. Perera, "Sign Language Usage and Accessibility in Sri Lanka: A Survey," Journal of 
+Inclusive Education Sri Lanka, vol. 3, no. 1, pp. 12–25, 2022. 
+[3] World Federation of the Deaf, "Mental Health and Deafness: A Global Perspective," 2021. [Online]. 
+Available: https://wfdeaf.org 
+[4] International Labour Organisation (ILO), "A Study on the Employment and Wage Outcomes of People with 
+Disabilities," Working Paper 124, 2024. [Online]. Available: https://www.ilo.org 
+[5] United Nations, Convention on the Rights of Persons with Disabilities (CRPD), adopted 13 Dec. 2006; 
+entered into force 3 May 2008. [Online]. Available: 
+https://www.un.org/disabilities/documents/convention/convoptprot-e.pdf 
+[6] Google, "Live Transcribe — Real-Time Captions for the Deaf and Hard of Hearing," Google Accessibility, 
+2023. [Online]. Available: https://www.android.com/accessibility/live-transcribe/ 
+[7] Ava Accessibility, "Ava – Live Captioning for Deaf and Hard of Hearing," 2023. [Online]. Available: 
+https://www.ava.me/ 
+[8] Rogervoice, "Rogervoice – Captioned Phone Calls for the Deaf," 2023. [Online]. Available: 
+https://www.rogervoice.com 
+[9] Signily Inc., "Signily – The World's First ASL Keyboard," 2022. [Online]. Available: 
+https://www.signily.com 
+[10] S.-K. Ko, C.-J. Kim, H. Jung, and C. Cho, "Neural Sign Language Production Using Transformers," in 
+Proc. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2019, pp. 3457–3466. 
+[11] S. Stoll, N. C. Camgoz, S. Hadfield, and R. Bowden, "Sign Language Production Using Neural Machine 
+Translation and Generative Adversarial Networks," in Proc. British Machine Vision Conference (BMVC), 2018. 
+[12] B. Saunders, N. C. Camgoz, and R. Bowden, "Progressive Transformers for End-to-End Sign Language 
+Production," in Proc. European Conference on Computer Vision (ECCV), 2020, pp. 687–705. 
+[13] N. C. Camgoz, S. Hadfield, O. Koller, H. Ney, and R. Bowden, "Neural Sign Language Translation," in 
+Proc. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2018, pp. 7784–7793. 
+[14] A. Radford, J. W. Kim, T. Xu, G. Brockman, C. McLeavey, and I. Sutskever, "Robust Speech Recognition 
+via Large-Scale Weak Supervision," arXiv preprint arXiv:2212.04356, 2022. 
+[15] J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, "BERT: Pre-training of Deep Bidirectional 
+Transformers for Language Understanding," in Proc. NAACL-HLT, 2019, pp. 4171–4186. 
+[16] T. Kucherenko, P. Jonell, S. van Waveren, G. Henter, S. Alexanderson, I. Leite, and H. Kjellstrom, 
+"Gesticulator: A Framework for Semantically-Aware Speech-Driven Gesture Generation," in Proc. ACM 
+International Conference on Multimodal Interaction (ICMI), 2020. 
+[[PAGE 49]]
+49 
+ 
+[17] D. Wanasinghe, C. Maddugoda, H. Ramawickrama, T. Munasinghe, L. Abeywardhana, and Y . 
+Mallawarachchi, "Hastha: Online Learning Platform for Hearing Impaired," in Proc. ICTeR, 2022. 
+[18] R. A. R. Fernando et al., "Sinhala Sign Language Learning System for Hearing Impaired Community," 
+IEEE Conference Publication, 2024. 
+[19] N. Dhananjaya, B. Ranathunga, and S. Jayasena, "BERTifying Sinhala — A Comprehensive Analysis of 
+Pre-Trained Language Models for Sinhala," in Proc. 13th Language Resources and Evaluation Conference 
+(LREC), 2022, pp. 3718–3728. 
+[20] B. G. J. Gamage, A. V . R. Dilshan, R. P. S. D. Paranagama, I. Weerathunga, R. M. S. H. Ranaweera, and D. 
+Kasthurirathna, "Sinhala Sign Language Translation through Immersive 3D Avatars and Adaptive Learning," in 
+Proc. 5th International Conference on Advancements in Computing (ICAC), IEEE, 2023. 
+[21] A. R. Hevner, S. T. March, J. Park, and S. Ram, "Design Science in Information Systems Research," MIS 
+Quarterly, vol. 28, no. 1, pp. 75–105, 2004. 
+[22] xAI / OpenAI, "XLM-RoBERTa: Unsupervised Cross-lingual Representation Learning at Scale," in Proc. 
+ACL, 2020. 
+ 
+ 
+ 
+ 
+  
+[[PAGE 50]]
+50 
+ 
+11. APPENDICES 
+Appendix A: Risk Analysis 
+The following risk register identifies eight key risks to the project, with likelihood, impact, 
+and mitigation strategies. Risks are rated on a 3-point scale: Low / Medium / High. 
+ 
+Table 14: Project Risk Register — Likelihood, Impact, and Mitigation 
+Risk Description Likelihood Impact Mitigation Strategy 
+Insufficient Sinhala-
+SSL parallel data 
+from School for Deaf 
+(target 500 pairs not 
+met) 
+High High Expand signer pool to 8+ signers; add speed perturbation 
+and temporal stretching augmentation (×3 training data); 
+supplement with rule-based synthetic pairs for high-
+frequency phrases; begin with smaller corpus for 
+prototype and iterate 
+No validated Sinhala 
+emotion annotation 
+dataset for XLM-R 
+fine-tuning 
+High Medium Use XLM-R zero-shot on GoEmotions-English as Phase 
+1 baseline; collect minimum 500 annotated Sinhala 
+emotion sentences in parallel with corpus collection; 
+engage Sinhala linguistics lecturer for annotation 
+validation 
+Whisper WER 
+exceeds 10% on 
+Sinhala dialectal 
+speech variations 
+Medium High Fine-tune on domain-specific vocabulary (healthcare, 
+education); use whisper.cpp quantised version for faster 
+iteration; apply language model rescoring with Sinhala 
+n-gram model; collect additional in-domain audio if 
+WER stalls above 15% 
+sinling stemming 
+errors on rare or 
+domain-specific 
+Sinhala word forms 
+Medium Medium Maintain manually curated exception dictionary for 
+SSL-domain vocabulary (100+ terms); implement 
+confidence thresholding with OOV flag for low-
+confidence stems; collaborate with Sinhala linguistics 
+department for edge case review 
+mT5 bone regression 
+head underfitting due 
+to small training 
+corpus 
+High High Begin with gloss-only training (classification head only) 
+for first 5 epochs to stabilise encoder; introduce bone 
+head from epoch 6 with lower learning rate; pre-warm 
+bone head using synthetic bone sequences from rule-
+based sign dictionary; reduce λ to 0.1 initially and 
+increase to 0.5 after convergence 
+expo-gl Three.js 
+WebGL compatibility 
+issues on target 
+Android devices 
+Medium High Maintain React Native WebView fallback with 
+android:hardwareAccelerated='true' tested on Android 
+14; test expo-gl on Android 8.0, 10, 12, and 14 devices at 
+project start; use lower-polygon avatar mesh if GPU 
+memory is constrained on older devices 
+[[PAGE 51]]
+51 
+ 
+Integration issues 
+with avatar rendering 
+component (Chamara 
+R M L K) 
+Low High Define and freeze WebSocket JSON bone schema in 
+Week 1 as a shared API contract; implement mock 
+FastAPI server serving pre-recorded bone sequences for 
+avatar development testing; weekly integration test from 
+Week 14; maintain schema versioning 
+SLIIT Ethics Review 
+Board approval 
+delayed beyond Week 
+1 
+Low Medium Submit complete ethics application package in Week 1 
+including consent forms, data handling plan, and 
+participant compensation schedule; begin with synthetic 
+data and pre-trained model baselines during review 
+period; proceed to data collection immediately upon 
+approval 
+ 
+Appendix B: Ethical Considerations Checklist 
+All data collection involving human participants will comply with the SLIIT Research Ethics 
+Policy and the Declaration of Helsinki. The following checklist will be completed before any 
+data collection begins: 
+• Ethics Application: Complete SLIIT Ethics Review Board application submitted in 
+Week 1, including study protocol, participant information sheet, consent forms in 
+Sinhala and English, data management plan, and risk assessment 
+• Informed Consent: Written informed consent obtained from all Deaf participants in 
+both Sinhala and English; consent forms reviewed by a qualified SSL interpreter to 
+ensure full comprehension by Deaf participants 
+• Right to Withdraw: All participants advised in writing and through SSL interpretation 
+that they may withdraw from the study at any time without consequence or 
+explanation required 
+• Data Anonymisation: All recorded Sinhala audio and signing video files assigned 
+anonymous participant IDs; no names, faces (beyond hands and arms for signing), or 
+identifying information stored in the corpus 
+• Data Security: All corpus data stored on SLIIT-provisioned encrypted institutional 
+storage; access restricted to the research team; no data transferred to personal devices 
+or external cloud services 
+• Community Validation: All SSL gloss annotations reviewed by a qualified SSL 
+annotator from the School for the Deaf, Ratmalana, to ensure accuracy and cultural 
+appropriateness 
+• Participant Compensation: Deaf signers compensated at LKR 500/session as approved 
+by the Ethics Board; School for the Deaf administration formally involved as 
+institutional partner 
+• Data Retention and Deletion: All personal data deleted within 6 months of final 
+project submission; anonymised corpus data retained and published with Ethics Board 
+approval for research community benefit 
+[[PAGE 52]]
+52 
+ 
+• Community Representation: Research output will represent Deaf SSL community 
+communication accurately and respectfully; avatar signing validated by Deaf 
+community members before any public demonstration 
+•  
+Appendix C: Sinhala Sign Language — Linguistic Background 
+C.1 SSL Grammar Overview 
+Sinhala Sign Language (SSL) is the primary visual-gestural language of the Sri Lankan Deaf 
+community. Like all natural sign languages, SSL has a distinct grammar that differs 
+fundamentally from spoken Sinhala: SSL uses topic-comment sentence structure (rather than 
+Sinhala's subject-object-verb order), spatial referencing to establish discourse participants in 
+signing space, and a rich non-manual component in which facial expressions, head 
+movements, eye gaze, and body posture carry grammatical meaning equivalent to verbal 
+morphology in spoken languages. 
+For the proposed system, three grammatical features of SSL are particularly relevant: (1) 
+Non-Manual Markers (NMMs) — raised eyebrows indicate wh-questions; furrowed brows 
+indicate yes/no questions or negation; head shake indicates negation; body lean forward 
+indicates affirmation or emphasis. These must be generated by the mT5 gloss head as 
+embedded NMM annotation tokens and encoded in the bone rotation output via head and 
+spine rotation parameters. (2) Temporal aspect marking — SSL uses timeline gestures and 
+temporal adverbs (PAST, FUTURE, NOW) rather than verbal inflection for tense; these are 
+generated from the tense markers extracted by sinling in Stage 2b. (3) Classifier predicates — 
+handshapes representing objects and their spatial relationships, generated as specific bone 
+configurations in the right and left hand finger joint rotations. 
+C.2 Justification for Bone-Level Animation 
+The choice to generate animation at the bone rotation level (21 bones × 3 Euler angles per 
+frame) rather than at the gloss lookup level (select a pre-recorded clip for each gloss) is 
+motivated by three linguistic requirements: (1) SSL co-articulation — consecutive signs 
+blend at their boundaries in natural signing, requiring continuous interpolation between sign 
+poses rather than discrete concatenation of pre-recorded clips; (2) prosodic modulation — the 
+amplitude, speed, and spatial extent of signs varies with prosodic stress and emotional tone in 
+ways that cannot be captured by a finite library of pre-recorded clips; (3) classifier predicates 
+and spatial agreement — the specific handshape and movement of classifier predicates 
+depends on the spatial context established earlier in the utterance, requiring generative rather 
+than retrieved motion parameters. 
+The bone-level approach generates each sign as a temporal sequence of 3D joint rotations 
+from the unified mT5 transformer, enabling co-articulation through continuous interpolation 
+(slerp), prosodic modulation through bone amplitude scaling, and novel classifier predicate 
+generation through learned generalization from training examples. 
+ 
+[[PAGE 53]]
+53 
+ 
+ 
+ 
+ 
