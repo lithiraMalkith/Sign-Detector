@@ -38,14 +38,9 @@ export async function Navbar() {
               <LogoutButton />
             </>
           ) : (
-            <>
-              <Link href="/login" className={buttonVariants("ghost", "md")}>
-                Log in
-              </Link>
-              <Link href="/register" className={buttonVariants("primary", "md")}>
-                Sign up
-              </Link>
-            </>
+            <Link href="/login" className={buttonVariants("ghost", "md")}>
+              Log in
+            </Link>
           )}
         </div>
       </div>
