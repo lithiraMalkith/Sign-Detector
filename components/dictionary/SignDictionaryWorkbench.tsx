@@ -139,6 +139,9 @@ function CameraRig({ preset, model }: { preset: ViewPreset; model: QuickMagicMod
 
     if (!model) return;
 
+    // Force the 0.01 scale to propagate before measuring — see the
+    // matching fix in AvatarViewer.tsx for the full explanation.
+    model.scene.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(model.scene);
     if (box.isEmpty()) return;
 
