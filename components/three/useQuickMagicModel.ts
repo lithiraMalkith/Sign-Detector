@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { useFrame, useThree } from "@react-three/fiber";
+import { enhanceAvatarSurface, type SurfaceReport } from "./surface/enhanceAvatarSurface";
 
 /* ------------------------------------------------------------------ */
 /*  Avatars                                                           */
@@ -145,6 +146,8 @@ const MAP_SLOTS = [
 /* ------------------------------------------------------------------ */
 
 export interface LoadOptions {
+  /** Reviewed avatar treatment; false restores the previous import behaviour. */
+  surfaceEnhancements?: boolean;
   /**
    * Drop the FBX's `color` vertex attribute. This is the fix for the red
    * skin — see stripVertexColors() for the full story. Exposed as a toggle
@@ -209,6 +212,7 @@ export interface QuickMagicModel {
   stats: ModelStats;
   /** Options this build was produced with — lets callers spot a pending rebuild. */
   appliedOptions: LoadOptions;
+  surfaceReport?: SurfaceReport;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1114,6 +1118,16 @@ async function buildModel(
   const materials = fixMaterials(group, maxAnisotropy);
   await applyFaceSubstitute(materials, group, renderer, options.bakeFaceDetail, avatar);
 
+  const enhanced = options.surfaceEnhancements
+    ? enhanceAvatarSurface(group, avatar.id)
+    : undefined;
+  if (enhanced) {
+    for (const report of materials) {
+      report.material = enhanced.replacements.get(report.material) ?? report.material;
+      if (!report.material.map) report.mapFile = null;
+    }
+  }
+
   const bones: THREE.Bone[] = [];
   group.traverse((child) => {
     if ((child as THREE.Bone).isBone) bones.push(child as THREE.Bone);
@@ -1140,6 +1154,7 @@ async function buildModel(
     textures,
     stats: computeStats(group, rawVertexCount, rawBytes),
     appliedOptions: options,
+    surfaceReport: enhanced?.report,
   };
 }
 
@@ -1196,6 +1211,7 @@ export function useQuickMagicModel(
     weldVertices: weld,
     recomputeNormals: recompute,
     bakeFaceDetail: bakeFace,
+    surfaceEnhancements = process.env.NEXT_PUBLIC_AVATAR_SURFACE_ENHANCEMENTS !== "0",
   } = options;
 
   useEffect(() => {
@@ -1219,6 +1235,7 @@ export function useQuickMagicModel(
             weldVertices: weld,
             recomputeNormals: recompute,
             bakeFaceDetail: bakeFace,
+            surfaceEnhancements,
           },
           gl,
           avatar
@@ -1244,7 +1261,7 @@ export function useQuickMagicModel(
     return () => {
       cancelled = true;
     };
-  }, [gl, strip, weld, recompute, bakeFace, avatarId, avatar]);
+  }, [gl, strip, weld, recompute, bakeFace, surfaceEnhancements, avatarId, avatar]);
 
   useEffect(() => {
     return () => {
